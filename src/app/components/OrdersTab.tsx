@@ -267,11 +267,14 @@ function NewOrderForm({
   catalog,
   onCancel,
   onSave,
+  onRegisterItem,
 }: {
   catalog: readonly string[];
   onCancel: () => void;
   onSave: (o: Order) => void;
+  onRegisterItem?: (name: string) => void;
 }) {
+
   const [customer, setCustomer] = useState("");
   const [date, setDate] = useState(todayISO());
   const [items, setItems] = useState<OrderItem[]>([]);

@@ -115,10 +115,12 @@ export function App() {
         {tab === "orders" && (
           <OrdersTab
             orders={activeOrders}
-            catalog={PRODUCT_CATALOG}
+            catalog={effectiveCatalog}
+            onRegisterItem={registerItem}
             onChange={(updater) => setOrders((curr) => updater(curr))}
           />
         )}
+
         {tab === "production" && <ProductionTab orders={activeOrders} />}
         {tab === "archive" && (
           <ArchiveTab

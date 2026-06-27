@@ -7,6 +7,7 @@ interface Props {
   orders: Order[];
   catalog: readonly string[];
   onChange: (updater: (orders: Order[]) => Order[]) => void;
+  onRegisterItem?: (name: string) => void;
 }
 
 function todayISO() {
@@ -18,7 +19,8 @@ function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function OrdersTab({ orders, catalog, onChange }: Props) {
+export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) {
+
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 

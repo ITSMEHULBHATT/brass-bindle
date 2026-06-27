@@ -334,13 +334,15 @@ function NewOrderForm({
         <ProductPicker
           catalog={catalog}
           excludeNames={existing}
-          onPick={(name) =>
+          onPick={(name) => {
+            onRegisterItem?.(name);
             setItems((curr) => [
               ...curr,
               { productName: name, quantityOrdered: 1, quantityFulfilled: 0 },
-            ])
-          }
+            ]);
+          }}
         />
+
       </div>
 
       {items.length > 0 && (

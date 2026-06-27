@@ -115,7 +115,8 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                   <AddItemInline
                     catalog={catalog}
                     existing={new Set(o.items.map((i) => i.productName))}
-                    onAdd={(name) =>
+                    onAdd={(name) => {
+                      onRegisterItem?.(name);
                       onChange((curr) =>
                         curr.map((x) =>
                           x.id === o.id
@@ -128,9 +129,10 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                               }
                             : x,
                         ),
-                      )
-                    }
+                      );
+                    }}
                   />
+
                   <button
                     onClick={() => {
                       if (confirm(`Delete order from ${o.customerName}?`))

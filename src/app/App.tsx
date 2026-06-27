@@ -3,7 +3,7 @@ import { Toaster, toast } from "sonner";
 import { ClipboardList, Factory, Archive, Share2 } from "lucide-react";
 import { PRODUCT_CATALOG } from "@/data/catalog";
 import type { Order } from "./types";
-import { loadOrders, saveOrders } from "./storage";
+import { loadOrders, saveOrders, loadCustomItems, saveCustomItems } from "./storage";
 import { isOrderComplete } from "./production";
 import { buildExportText } from "./exporter";
 import { copyText, shareText } from "./share";

@@ -15,17 +15,40 @@ type Tab = "orders" | "production" | "archive";
 
 export function App() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [customItems, setCustomItems] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>("orders");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     setOrders(loadOrders());
+    setCustomItems(loadCustomItems());
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (hydrated) saveOrders(orders);
   }, [orders, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) saveCustomItems(customItems);
+  }, [customItems, hydrated]);
+
+  const effectiveCatalog = useMemo(() => {
+    const known = new Set(PRODUCT_CATALOG.map((s) => s.toUpperCase()));
+    const extras = customItems.filter((s) => !known.has(s.toUpperCase()));
+    return [...extras, ...PRODUCT_CATALOG];
+  }, [customItems]);
+
+  function registerItem(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const upper = trimmed.toUpperCase();
+    if (PRODUCT_CATALOG.some((s) => s.toUpperCase() === upper)) return;
+    setCustomItems((curr) =>
+      curr.some((s) => s.toUpperCase() === upper) ? curr : [trimmed, ...curr],
+    );
+  }
+
 
   // Auto-archive newly-completed orders
   useEffect(() => {

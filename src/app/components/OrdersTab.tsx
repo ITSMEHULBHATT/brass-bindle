@@ -7,6 +7,7 @@ interface Props {
   orders: Order[];
   catalog: readonly string[];
   onChange: (updater: (orders: Order[]) => Order[]) => void;
+  onRegisterItem?: (name: string) => void;
 }
 
 function todayISO() {
@@ -18,7 +19,8 @@ function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function OrdersTab({ orders, catalog, onChange }: Props) {
+export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) {
+
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -36,6 +38,7 @@ export function OrdersTab({ orders, catalog, onChange }: Props) {
       {creating && (
         <NewOrderForm
           catalog={catalog}
+          onRegisterItem={onRegisterItem}
           onCancel={() => setCreating(false)}
           onSave={(o) => {
             onChange((curr) => [o, ...curr]);
@@ -43,6 +46,7 @@ export function OrdersTab({ orders, catalog, onChange }: Props) {
           }}
         />
       )}
+
 
       {orders.length === 0 && !creating && (
         <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
@@ -111,7 +115,8 @@ export function OrdersTab({ orders, catalog, onChange }: Props) {
                   <AddItemInline
                     catalog={catalog}
                     existing={new Set(o.items.map((i) => i.productName))}
-                    onAdd={(name) =>
+                    onAdd={(name) => {
+                      onRegisterItem?.(name);
                       onChange((curr) =>
                         curr.map((x) =>
                           x.id === o.id
@@ -124,9 +129,10 @@ export function OrdersTab({ orders, catalog, onChange }: Props) {
                               }
                             : x,
                         ),
-                      )
-                    }
+                      );
+                    }}
                   />
+
                   <button
                     onClick={() => {
                       if (confirm(`Delete order from ${o.customerName}?`))
@@ -261,11 +267,14 @@ function NewOrderForm({
   catalog,
   onCancel,
   onSave,
+  onRegisterItem,
 }: {
   catalog: readonly string[];
   onCancel: () => void;
   onSave: (o: Order) => void;
+  onRegisterItem?: (name: string) => void;
 }) {
+
   const [customer, setCustomer] = useState("");
   const [date, setDate] = useState(todayISO());
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -325,13 +334,15 @@ function NewOrderForm({
         <ProductPicker
           catalog={catalog}
           excludeNames={existing}
-          onPick={(name) =>
+          onPick={(name) => {
+            onRegisterItem?.(name);
             setItems((curr) => [
               ...curr,
               { productName: name, quantityOrdered: 1, quantityFulfilled: 0 },
-            ])
-          }
+            ]);
+          }}
         />
+
       </div>
 
       {items.length > 0 && (

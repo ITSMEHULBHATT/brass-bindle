@@ -3,7 +3,7 @@ import { Toaster, toast } from "sonner";
 import { ClipboardList, Factory, Archive, Share2 } from "lucide-react";
 import { PRODUCT_CATALOG } from "@/data/catalog";
 import type { Order } from "./types";
-import { loadOrders, saveOrders } from "./storage";
+import { loadOrders, saveOrders, loadCustomItems, saveCustomItems } from "./storage";
 import { isOrderComplete } from "./production";
 import { buildExportText } from "./exporter";
 import { copyText, shareText } from "./share";
@@ -15,17 +15,40 @@ type Tab = "orders" | "production" | "archive";
 
 export function App() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [customItems, setCustomItems] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>("orders");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     setOrders(loadOrders());
+    setCustomItems(loadCustomItems());
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (hydrated) saveOrders(orders);
   }, [orders, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) saveCustomItems(customItems);
+  }, [customItems, hydrated]);
+
+  const effectiveCatalog = useMemo(() => {
+    const known = new Set(PRODUCT_CATALOG.map((s) => s.toUpperCase()));
+    const extras = customItems.filter((s) => !known.has(s.toUpperCase()));
+    return [...extras, ...PRODUCT_CATALOG];
+  }, [customItems]);
+
+  function registerItem(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const upper = trimmed.toUpperCase();
+    if (PRODUCT_CATALOG.some((s) => s.toUpperCase() === upper)) return;
+    setCustomItems((curr) =>
+      curr.some((s) => s.toUpperCase() === upper) ? curr : [trimmed, ...curr],
+    );
+  }
+
 
   // Auto-archive newly-completed orders
   useEffect(() => {
@@ -92,10 +115,12 @@ export function App() {
         {tab === "orders" && (
           <OrdersTab
             orders={activeOrders}
-            catalog={PRODUCT_CATALOG}
+            catalog={effectiveCatalog}
+            onRegisterItem={registerItem}
             onChange={(updater) => setOrders((curr) => updater(curr))}
           />
         )}
+
         {tab === "production" && <ProductionTab orders={activeOrders} />}
         {tab === "archive" && (
           <ArchiveTab

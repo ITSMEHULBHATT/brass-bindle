@@ -119,29 +119,50 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
         ref={listRef}
         className="max-h-72 overflow-y-auto rounded-md border border-border bg-card"
       >
-        {results.length === 0 ? (
+        {results.length === 0 && !query.trim() ? (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-            No matches. Try fewer words.
+            Start typing to search products.
           </div>
         ) : (
-          results.map((name, i) => (
-            <button
-              key={name}
-              data-idx={i}
-              type="button"
-              onClick={() => {
-                onPick(name);
-                setQuery("");
-                inputRef.current?.focus();
-              }}
-              onMouseEnter={() => setActiveIdx(i)}
-              className={`block w-full border-b border-border/60 px-3 py-2.5 text-left text-sm last:border-b-0 ${
-                i === activeIdx ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
-              }`}
-            >
-              {name}
-            </button>
-          ))
+          <>
+            {results.map((name, i) => (
+              <button
+                key={name}
+                data-idx={i}
+                type="button"
+                onClick={() => {
+                  onPick(name);
+                  setQuery("");
+                  inputRef.current?.focus();
+                }}
+                onMouseEnter={() => setActiveIdx(i)}
+                className={`block w-full border-b border-border/60 px-3 py-2.5 text-left text-sm last:border-b-0 ${
+                  i === activeIdx ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+            {query.trim() && (
+              <button
+                data-idx={results.length}
+                type="button"
+                onClick={() => {
+                  onPick(query.trim());
+                  setQuery("");
+                  inputRef.current?.focus();
+                }}
+                onMouseEnter={() => setActiveIdx(results.length)}
+                className={`block w-full border-t border-border px-3 py-2.5 text-left text-sm font-medium ${
+                  activeIdx === results.length
+                    ? "bg-accent text-accent-foreground"
+                    : "text-primary hover:bg-accent/50"
+                }`}
+              >
+                + Use "{query.trim()}" as custom item
+              </button>
+            )}
+          </>
         )}
       </div>
       <p className="text-[11px] text-muted-foreground">

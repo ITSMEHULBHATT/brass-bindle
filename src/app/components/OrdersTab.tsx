@@ -38,6 +38,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
       {creating && (
         <NewOrderForm
           catalog={catalog}
+          onRegisterItem={onRegisterItem}
           onCancel={() => setCreating(false)}
           onSave={(o) => {
             onChange((curr) => [o, ...curr]);
@@ -45,6 +46,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
           }}
         />
       )}
+
 
       {orders.length === 0 && !creating && (
         <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">

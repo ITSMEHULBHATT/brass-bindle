@@ -385,7 +385,8 @@ function NewOrderForm({
         </button>
         <button
           onClick={save}
-          className="flex-[2] rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          disabled={!canSave}
+          className="flex-[2] rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Save order
         </button>

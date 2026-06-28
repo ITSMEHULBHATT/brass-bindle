@@ -4,7 +4,7 @@ import { App } from "@/app/App";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Brass Orders — Production Tracker" },
+      { title: "SUPERIOR BATH FITTINGS — Production Tracker" },
       { name: "description", content: "Track customer orders and aggregate production totals for brass bath-fittings." },
     ],
   }),

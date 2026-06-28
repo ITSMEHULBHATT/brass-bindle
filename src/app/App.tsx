@@ -89,7 +89,7 @@ export function App() {
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="flex items-center justify-between py-3">
           <div>
-            <h1 className="text-lg font-bold tracking-tight">Brass Orders</h1>
+            <h1 className="text-lg font-bold tracking-tight">SUPERIOR BATH FITTINGS</h1>
             <p className="text-xs text-muted-foreground">
               {activeOrders.length} active · {archivedOrders.length} archived
             </p>

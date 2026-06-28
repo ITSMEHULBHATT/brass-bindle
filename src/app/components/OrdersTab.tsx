@@ -58,7 +58,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
         const totalOrd = o.items.reduce((s, i) => s + i.quantityOrdered, 0);
         const totalFul = o.items.reduce((s, i) => s + i.quantityFulfilled, 0);
         const pct = totalOrd ? Math.round((totalFul / totalOrd) * 100) : 0;
-        const isOpen = expanded[o.id] ?? true;
+        const isOpen = expanded[o.id] ?? false;
         return (
           <div key={o.id} className="overflow-hidden rounded-lg border border-border bg-card">
             <button
@@ -124,7 +124,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                                 ...x,
                                 items: [
                                   ...x.items,
-                                  { productName: name, quantityOrdered: 1, quantityFulfilled: 0 },
+                                  { productName: name, quantityOrdered: 0, quantityFulfilled: 0 },
                                 ],
                               }
                             : x,
@@ -280,6 +280,7 @@ function NewOrderForm({
   const [items, setItems] = useState<OrderItem[]>([]);
 
   const existing = new Set(items.map((i) => i.productName));
+  const canSave = customer.trim().length > 0 && items.length > 0 && items.every((i) => i.quantityOrdered > 0);
 
   function save() {
     if (!customer.trim()) {
@@ -338,7 +339,7 @@ function NewOrderForm({
             onRegisterItem?.(name);
             setItems((curr) => [
               ...curr,
-              { productName: name, quantityOrdered: 1, quantityFulfilled: 0 },
+              { productName: name, quantityOrdered: 0, quantityFulfilled: 0 },
             ]);
           }}
         />
@@ -353,12 +354,12 @@ function NewOrderForm({
               <input
                 type="number"
                 inputMode="numeric"
-                min={1}
+                min={0}
                 value={it.quantityOrdered}
                 onChange={(e) =>
                   setItems((curr) =>
                     curr.map((x, i) =>
-                      i === idx ? { ...x, quantityOrdered: Math.max(1, parseInt(e.target.value || "1", 10)) } : x,
+                      i === idx ? { ...x, quantityOrdered: Math.max(0, parseInt(e.target.value || "0", 10)) } : x,
                     ),
                   )
                 }
@@ -384,7 +385,8 @@ function NewOrderForm({
         </button>
         <button
           onClick={save}
-          className="flex-[2] rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          disabled={!canSave}
+          className="flex-[2] rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Save order
         </button>

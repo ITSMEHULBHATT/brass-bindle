@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.brassworks.orders",
-  appName: "Brass Orders",
+  appName: "SUPERIOR BATH FITTINGS",
   webDir: "dist-mobile",
   android: {
     allowMixedContent: false,

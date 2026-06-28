@@ -124,7 +124,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                                 ...x,
                                 items: [
                                   ...x.items,
-                                  { productName: name, quantityOrdered: 1, quantityFulfilled: 0 },
+                                  { productName: name, quantityOrdered: 0, quantityFulfilled: 0 },
                                 ],
                               }
                             : x,

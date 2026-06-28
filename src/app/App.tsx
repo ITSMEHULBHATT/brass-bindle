@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Toaster, toast } from "sonner";
-import { ClipboardList, Factory, Archive, Share2 } from "lucide-react";
+import { Toaster } from "sonner";
+import { ClipboardList, Factory, Archive, Database } from "lucide-react";
 import { PRODUCT_CATALOG } from "@/data/catalog";
 import type { Order } from "./types";
 import { loadOrders, saveOrders, loadCustomItems, saveCustomItems } from "./storage";
 import { isOrderComplete } from "./production";
-import { buildExportText } from "./exporter";
-import { copyText, shareText } from "./share";
 import { OrdersTab } from "./components/OrdersTab";
 import { ProductionTab } from "./components/ProductionTab";
 import { ArchiveTab } from "./components/ArchiveTab";
+import { BackupPanel } from "./components/BackupPanel";
 
 type Tab = "orders" | "production" | "archive";
 

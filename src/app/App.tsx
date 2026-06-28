@@ -66,22 +66,6 @@ export function App() {
   const activeOrders = useMemo(() => orders.filter((o) => !o.archived), [orders]);
   const archivedOrders = useMemo(() => orders.filter((o) => o.archived), [orders]);
 
-  async function handleExport() {
-    const text = buildExportText(orders);
-    try {
-      await shareText(text);
-      toast.success("Summary ready to share");
-    } catch {
-      const ok = await copyText(text);
-      toast[ok ? "success" : "error"](ok ? "Copied to clipboard" : "Could not export");
-    }
-  }
-
-  async function handleCopy() {
-    const ok = await copyText(buildExportText(orders));
-    toast[ok ? "success" : "error"](ok ? "Copied to clipboard" : "Could not copy");
-  }
-
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background text-foreground">
       <Toaster position="top-center" richColors />
@@ -96,20 +80,26 @@ export function App() {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleCopy}
-              className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-accent"
-            >
-              Copy
-            </button>
-            <button
-              onClick={handleExport}
+              onClick={() => setShowBackup(true)}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
             >
-              <Share2 className="size-3.5" /> Export
+              <Database className="size-3.5" /> Backup
             </button>
           </div>
         </div>
       </header>
+
+      {showBackup && (
+        <BackupPanel
+          orders={orders}
+          customItems={customItems}
+          onRestore={(o, c) => {
+            setOrders(o);
+            setCustomItems(c);
+          }}
+          onClose={() => setShowBackup(false)}
+        />
+      )}
 
       <main className="flex-1 overflow-y-auto pb-[calc(72px+env(safe-area-inset-bottom))]">
         {tab === "orders" && (

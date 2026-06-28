@@ -353,12 +353,12 @@ function NewOrderForm({
               <input
                 type="number"
                 inputMode="numeric"
-                min={1}
+                min={0}
                 value={it.quantityOrdered}
                 onChange={(e) =>
                   setItems((curr) =>
                     curr.map((x, i) =>
-                      i === idx ? { ...x, quantityOrdered: Math.max(1, parseInt(e.target.value || "1", 10)) } : x,
+                      i === idx ? { ...x, quantityOrdered: Math.max(0, parseInt(e.target.value || "0", 10)) } : x,
                     ),
                   )
                 }

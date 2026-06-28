@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Plus, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Trash2, X, ChevronDown, ChevronUp, Pencil, Check, Search } from "lucide-react";
 import type { Order, OrderItem } from "../types";
 import { ProductPicker } from "./ProductPicker";
+import { daysSince, pendingLevel, pendingBadgeClass } from "../pending";
 
 interface Props {
   orders: Order[];
@@ -20,9 +21,16 @@ function uid() {
 }
 
 export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) {
-
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [editing, setEditing] = useState<Record<string, boolean>>({});
+  const [customerQuery, setCustomerQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = customerQuery.trim().toLowerCase();
+    if (!q) return orders;
+    return orders.filter((o) => o.customerName.toLowerCase().includes(q));
+  }, [orders, customerQuery]);
 
   return (
     <div className="space-y-3 p-3">
@@ -47,6 +55,25 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
         />
       )}
 
+      {orders.length > 0 && (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={customerQuery}
+            onChange={(e) => setCustomerQuery(e.target.value)}
+            placeholder="Search customer name…"
+            className="w-full rounded-md border border-input bg-background px-9 py-2.5 text-sm focus:border-primary focus:outline-none"
+          />
+          {customerQuery && (
+            <button
+              onClick={() => setCustomerQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {orders.length === 0 && !creating && (
         <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
@@ -54,36 +81,79 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
         </div>
       )}
 
-      {orders.map((o) => {
+      {orders.length > 0 && filtered.length === 0 && (
+        <div className="rounded-lg border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+          No customers match “{customerQuery}”.
+        </div>
+      )}
+
+      {filtered.map((o) => {
         const totalOrd = o.items.reduce((s, i) => s + i.quantityOrdered, 0);
         const totalFul = o.items.reduce((s, i) => s + i.quantityFulfilled, 0);
         const pct = totalOrd ? Math.round((totalFul / totalOrd) * 100) : 0;
         const isOpen = expanded[o.id] ?? false;
+        const isEditing = editing[o.id] ?? false;
+        const days = daysSince(o.datePlaced);
+        const level = pendingLevel(days);
+
         return (
           <div key={o.id} className="overflow-hidden rounded-lg border border-border bg-card">
-            <button
-              onClick={() => setExpanded((e) => ({ ...e, [o.id]: !isOpen }))}
-              className="flex w-full items-start justify-between gap-2 px-3 py-3 text-left"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="truncate text-base font-semibold">{o.customerName}</h3>
-                  <span className="shrink-0 text-xs text-muted-foreground">{o.datePlaced}</span>
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
+            {isEditing ? (
+              <InlineEditHeader
+                order={o}
+                onCancel={() => setEditing((e) => ({ ...e, [o.id]: false }))}
+                onSave={(name, date) => {
+                  onChange((curr) =>
+                    curr.map((x) => (x.id === o.id ? { ...x, customerName: name, datePlaced: date } : x)),
+                  );
+                  setEditing((e) => ({ ...e, [o.id]: false }));
+                }}
+              />
+            ) : (
+              <div className="flex items-start gap-1 px-3 py-3">
+                <button
+                  onClick={() => setExpanded((e) => ({ ...e, [o.id]: !isOpen }))}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <h3 className="truncate text-base font-semibold">{o.customerName}</h3>
+                    <span className="shrink-0 text-xs text-muted-foreground">{o.datePlaced}</span>
+                    {level && (
+                      <span
+                        className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${pendingBadgeClass(level)}`}
+                      >
+                        {days}d pending
+                      </span>
+                    )}
                   </div>
-                  <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground">
-                    {totalFul}/{totalOrd} · {pct}%
-                  </span>
-                </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground">
+                      {totalFul}/{totalOrd} · {pct}%
+                    </span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setEditing((e) => ({ ...e, [o.id]: true }))}
+                  className="rounded p-1.5 text-muted-foreground hover:bg-accent"
+                  title="Edit customer / date"
+                >
+                  <Pencil className="size-4" />
+                </button>
+                <button
+                  onClick={() => setExpanded((e) => ({ ...e, [o.id]: !isOpen }))}
+                  className="rounded p-1.5 text-muted-foreground hover:bg-accent"
+                  title={isOpen ? "Collapse" : "Expand"}
+                >
+                  {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                </button>
               </div>
-              {isOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
-            </button>
+            )}
 
             {isOpen && (
               <div className="border-t border-border">
@@ -149,6 +219,52 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function InlineEditHeader({
+  order,
+  onCancel,
+  onSave,
+}: {
+  order: Order;
+  onCancel: () => void;
+  onSave: (name: string, date: string) => void;
+}) {
+  const [name, setName] = useState(order.customerName);
+  const [date, setDate] = useState(order.datePlaced);
+  const canSave = name.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  return (
+    <div className="space-y-2 px-3 py-3">
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Customer name"
+        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+      />
+      <div className="flex items-center gap-2">
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        />
+        <button
+          onClick={onCancel}
+          className="rounded-md border border-border px-2.5 py-2 text-xs font-medium hover:bg-accent"
+        >
+          Cancel
+        </button>
+        <button
+          disabled={!canSave}
+          onClick={() => onSave(name.trim(), date)}
+          className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        >
+          <Check className="size-3.5" /> Save
+        </button>
+      </div>
     </div>
   );
 }
@@ -274,7 +390,6 @@ function NewOrderForm({
   onSave: (o: Order) => void;
   onRegisterItem?: (name: string) => void;
 }) {
-
   const [customer, setCustomer] = useState("");
   const [date, setDate] = useState(todayISO());
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -283,14 +398,7 @@ function NewOrderForm({
   const canSave = customer.trim().length > 0 && items.length > 0 && items.every((i) => i.quantityOrdered > 0);
 
   function save() {
-    if (!customer.trim()) {
-      alert("Enter a customer name.");
-      return;
-    }
-    if (items.length === 0) {
-      alert("Add at least one item.");
-      return;
-    }
+    if (!canSave) return;
     onSave({
       id: uid(),
       customerName: customer.trim(),
@@ -343,7 +451,6 @@ function NewOrderForm({
             ]);
           }}
         />
-
       </div>
 
       {items.length > 0 && (

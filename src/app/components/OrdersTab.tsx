@@ -58,7 +58,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
         const totalOrd = o.items.reduce((s, i) => s + i.quantityOrdered, 0);
         const totalFul = o.items.reduce((s, i) => s + i.quantityFulfilled, 0);
         const pct = totalOrd ? Math.round((totalFul / totalOrd) * 100) : 0;
-        const isOpen = expanded[o.id] ?? true;
+        const isOpen = expanded[o.id] ?? false;
         return (
           <div key={o.id} className="overflow-hidden rounded-lg border border-border bg-card">
             <button

@@ -9,7 +9,7 @@ async function tryNative<T>(loader: () => Promise<T>): Promise<T | null> {
   }
 }
 
-export async function shareText(text: string, title = "Brass Orders Summary"): Promise<void> {
+export async function shareText(text: string, title = "SUPERIOR BATH FITTINGS Summary"): Promise<void> {
   const cap = await tryNative(() => import("@capacitor/share"));
   if (cap) {
     try {

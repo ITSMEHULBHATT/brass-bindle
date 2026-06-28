@@ -280,6 +280,7 @@ function NewOrderForm({
   const [items, setItems] = useState<OrderItem[]>([]);
 
   const existing = new Set(items.map((i) => i.productName));
+  const canSave = customer.trim().length > 0 && items.length > 0 && items.every((i) => i.quantityOrdered > 0);
 
   function save() {
     if (!customer.trim()) {

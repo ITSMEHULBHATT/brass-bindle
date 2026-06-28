@@ -17,6 +17,7 @@ export function App() {
   const [customItems, setCustomItems] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>("orders");
   const [hydrated, setHydrated] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
 
   useEffect(() => {
     setOrders(loadOrders());

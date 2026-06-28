@@ -338,7 +338,7 @@ function NewOrderForm({
             onRegisterItem?.(name);
             setItems((curr) => [
               ...curr,
-              { productName: name, quantityOrdered: 1, quantityFulfilled: 0 },
+              { productName: name, quantityOrdered: 0, quantityFulfilled: 0 },
             ]);
           }}
         />

@@ -101,6 +101,16 @@ export function App() {
         </div>
       </header>
 
+      {updateAvailable && (
+        <button
+          onClick={applyUpdate}
+          className="flex w-full items-center justify-center gap-2 bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+        >
+          <RefreshCw className="size-4" /> Update available — tap to refresh
+        </button>
+      )}
+
+
       {showBackup && (
         <BackupPanel
           orders={orders}

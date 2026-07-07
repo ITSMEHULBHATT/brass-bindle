@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Undo2, Trash2 } from "lucide-react";
 import type { Order } from "../types";
 
@@ -10,7 +11,12 @@ export function ArchiveTab({
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  if (orders.length === 0) {
+  const sorted = useMemo(() => {
+    const keyOf = (o: Order) => o.archivedAt ?? o.datePlaced ?? "";
+    return [...orders].sort((a, b) => keyOf(b).localeCompare(keyOf(a)));
+  }, [orders]);
+
+  if (sorted.length === 0) {
     return (
       <div className="p-3">
         <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
@@ -22,7 +28,8 @@ export function ArchiveTab({
 
   return (
     <div className="space-y-3 p-3">
-      {orders.map((o) => {
+      {sorted.map((o) => {
+
         const total = o.items.reduce((s, i) => s + i.quantityOrdered, 0);
         return (
           <div key={o.id} className="rounded-lg border border-border bg-card">

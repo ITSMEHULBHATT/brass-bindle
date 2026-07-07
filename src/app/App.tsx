@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Toaster } from "sonner";
-import { ClipboardList, Factory, Archive, Database } from "lucide-react";
+import { ClipboardList, Factory, Archive, Database, RefreshCw } from "lucide-react";
 import { PRODUCT_CATALOG } from "@/data/catalog";
 import type { Order } from "./types";
 import { loadOrders, saveOrders, loadCustomItems, saveCustomItems } from "./storage";
@@ -9,10 +9,12 @@ import { OrdersTab } from "./components/OrdersTab";
 import { ProductionTab } from "./components/ProductionTab";
 import { ArchiveTab } from "./components/ArchiveTab";
 import { BackupPanel } from "./components/BackupPanel";
+import { usePwaUpdate } from "./pwa-update";
 
 type Tab = "orders" | "production" | "archive";
 
 export function App() {
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [customItems, setCustomItems] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>("orders");
@@ -50,18 +52,28 @@ export function App() {
   }
 
 
-  // Auto-archive newly-completed orders
+  // Auto-archive orders ONLY on transition from incomplete -> complete.
+  // Prevents restored (still-complete) orders from being re-archived immediately.
+  const prevCompleteRef = useRef<Set<string>>(new Set());
   useEffect(() => {
+    if (!hydrated) return;
+    const nowComplete = new Set(orders.filter((o) => isOrderComplete(o)).map((o) => o.id));
     let changed = false;
     const next = orders.map((o) => {
-      if (!o.archived && isOrderComplete(o)) {
+      const complete = nowComplete.has(o.id);
+      const wasComplete = prevCompleteRef.current.has(o.id);
+      if (!o.archived && complete && !wasComplete) {
         changed = true;
         return { ...o, archived: true, archivedAt: new Date().toISOString() };
       }
       return o;
     });
+    prevCompleteRef.current = nowComplete;
     if (changed) setOrders(next);
-  }, [orders]);
+  }, [orders, hydrated]);
+
+  const { updateAvailable, applyUpdate } = usePwaUpdate();
+
 
   const activeOrders = useMemo(() => orders.filter((o) => !o.archived), [orders]);
   const archivedOrders = useMemo(() => orders.filter((o) => o.archived), [orders]);

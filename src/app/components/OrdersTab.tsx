@@ -1,14 +1,31 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, X, ChevronDown, ChevronUp, Pencil, Check, Search } from "lucide-react";
-import type { Order, OrderItem } from "../types";
+import {
+  Plus,
+  Trash2,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Check,
+  Search,
+  Package,
+  Copy,
+  FileText,
+} from "lucide-react";
+import type { Order, OrderItem, Customer, Priority } from "../types";
 import { ProductPicker } from "./ProductPicker";
+import { SplitShipModal } from "./SplitShipModal";
 import { daysSince, pendingLevel, pendingBadgeClass } from "../pending";
 
 interface Props {
   orders: Order[];
   catalog: readonly string[];
+  customers: Customer[];
   onChange: (updater: (orders: Order[]) => Order[]) => void;
   onRegisterItem?: (name: string) => void;
+  onRegisterCustomer?: (name: string) => void;
+  onCreateShipment: (orderId: string, itemIds: string[]) => void;
+  onCloneOrder: (order: Order) => void;
 }
 
 function todayISO() {
@@ -20,17 +37,41 @@ function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) {
+const PRIORITY_ORDER: Record<Priority, number> = { high: 0, normal: 1, low: 2 };
+
+function priorityChipClass(p: Priority, active: boolean): string {
+  if (p === "high") return active ? "bg-red-600 text-white" : "border border-red-500/40 text-red-600";
+  if (p === "low") return active ? "bg-slate-500 text-white" : "border border-slate-400/40 text-slate-600";
+  return active ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground";
+}
+
+export function OrdersTab({
+  orders,
+  catalog,
+  customers,
+  onChange,
+  onRegisterItem,
+  onRegisterCustomer,
+  onCreateShipment,
+  onCloneOrder,
+}: Props) {
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<Record<string, boolean>>({});
   const [customerQuery, setCustomerQuery] = useState("");
+  const [splitFor, setSplitFor] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = customerQuery.trim().toLowerCase();
-    if (!q) return orders;
-    return orders.filter((o) => o.customerName.toLowerCase().includes(q));
+    const list = q ? orders.filter((o) => o.customerName.toLowerCase().includes(q)) : orders;
+    return [...list].sort((a, b) => {
+      const p = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      if (p !== 0) return p;
+      return b.datePlaced.localeCompare(a.datePlaced);
+    });
   }, [orders, customerQuery]);
+
+  const splitOrder = splitFor ? orders.find((o) => o.id === splitFor) : null;
 
   return (
     <div className="space-y-3 p-3">
@@ -46,7 +87,9 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
       {creating && (
         <NewOrderForm
           catalog={catalog}
+          customers={customers}
           onRegisterItem={onRegisterItem}
+          onRegisterCustomer={onRegisterCustomer}
           onCancel={() => setCreating(false)}
           onSave={(o) => {
             onChange((curr) => [o, ...curr]);
@@ -77,34 +120,41 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
 
       {orders.length === 0 && !creating && (
         <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-          No active orders. Tap “New order” to start.
+          No active orders. Tap "New order" to start.
         </div>
       )}
 
       {orders.length > 0 && filtered.length === 0 && (
         <div className="rounded-lg border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
-          No customers match “{customerQuery}”.
+          No customers match "{customerQuery}".
         </div>
       )}
 
       {filtered.map((o) => {
-        const totalOrd = o.items.reduce((s, i) => s + i.quantityOrdered, 0);
-        const totalFul = o.items.reduce((s, i) => s + i.quantityFulfilled, 0);
-        const pct = totalOrd ? Math.round((totalFul / totalOrd) * 100) : 0;
+        const totalItems = o.items.length;
+        const shippedItems = o.items.filter((i) => i.shipped).length;
+        const pct = totalItems ? Math.round((shippedItems / totalItems) * 100) : 0;
         const isOpen = expanded[o.id] ?? false;
         const isEditing = editing[o.id] ?? false;
         const days = daysSince(o.datePlaced);
         const level = pendingLevel(days);
+        const unshipped = o.items.filter((i) => !i.shipped);
 
         return (
           <div key={o.id} className="overflow-hidden rounded-lg border border-border bg-card">
             {isEditing ? (
               <InlineEditHeader
                 order={o}
+                customers={customers}
+                onRegisterCustomer={onRegisterCustomer}
                 onCancel={() => setEditing((e) => ({ ...e, [o.id]: false }))}
-                onSave={(name, date) => {
+                onSave={(name, date, notes, priority) => {
                   onChange((curr) =>
-                    curr.map((x) => (x.id === o.id ? { ...x, customerName: name, datePlaced: date } : x)),
+                    curr.map((x) =>
+                      x.id === o.id
+                        ? { ...x, customerName: name, datePlaced: date, notes, priority }
+                        : x,
+                    ),
                   );
                   setEditing((e) => ({ ...e, [o.id]: false }));
                 }}
@@ -116,6 +166,17 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                   className="min-w-0 flex-1 text-left"
                 >
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    {o.priority !== "normal" && (
+                      <span
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                          o.priority === "high"
+                            ? "bg-red-500/15 text-red-600"
+                            : "bg-slate-500/15 text-slate-600"
+                        }`}
+                      >
+                        {o.priority}
+                      </span>
+                    )}
                     <h3 className="truncate text-base font-semibold">{o.customerName}</h3>
                     <span className="shrink-0 text-xs text-muted-foreground">{o.datePlaced}</span>
                     {level && (
@@ -133,15 +194,21 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground">
-                      {totalFul}/{totalOrd} · {pct}%
+                    <span className="w-24 shrink-0 text-right text-[11px] font-medium tabular-nums text-muted-foreground">
+                      {shippedItems}/{totalItems} shipped
                     </span>
                   </div>
+                  {o.notes && (
+                    <p className="mt-1.5 flex items-start gap-1 text-[11px] text-muted-foreground">
+                      <FileText className="mt-0.5 size-3 shrink-0" />
+                      <span className="line-clamp-2">{o.notes}</span>
+                    </p>
+                  )}
                 </button>
                 <button
                   onClick={() => setEditing((e) => ({ ...e, [o.id]: true }))}
                   className="rounded p-1.5 text-muted-foreground hover:bg-accent"
-                  title="Edit customer / date"
+                  title="Edit"
                 >
                   <Pencil className="size-4" />
                 </button>
@@ -159,17 +226,8 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
               <div className="border-t border-border">
                 {o.items.map((it, idx) => (
                   <ItemRow
-                    key={`${it.productName}-${idx}`}
+                    key={it.id}
                     item={it}
-                    onChange={(next) =>
-                      onChange((curr) =>
-                        curr.map((x) =>
-                          x.id === o.id
-                            ? { ...x, items: x.items.map((y, i) => (i === idx ? next : y)) }
-                            : x,
-                        ),
-                      )
-                    }
                     onRemove={() =>
                       onChange((curr) =>
                         curr.map((x) =>
@@ -179,9 +237,23 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                         ),
                       )
                     }
+                    onQtyChange={(q) =>
+                      onChange((curr) =>
+                        curr.map((x) =>
+                          x.id === o.id
+                            ? {
+                                ...x,
+                                items: x.items.map((y, i) =>
+                                  i === idx ? { ...y, quantityOrdered: Math.max(1, q) } : y,
+                                ),
+                              }
+                            : x,
+                        ),
+                      )
+                    }
                   />
                 ))}
-                <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-3 py-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-muted/30 px-3 py-2">
                   <AddItemInline
                     catalog={catalog}
                     existing={new Set(o.items.map((i) => i.productName))}
@@ -194,7 +266,12 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                                 ...x,
                                 items: [
                                   ...x.items,
-                                  { productName: name, quantityOrdered: 0, quantityFulfilled: 0 },
+                                  {
+                                    id: uid(),
+                                    productName: name,
+                                    quantityOrdered: 1,
+                                    shipped: false,
+                                  },
                                 ],
                               }
                             : x,
@@ -203,47 +280,88 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                     }}
                   />
 
-                  <button
-                    onClick={() => {
-                      if (confirm(`Delete order from ${o.customerName}?`))
-                        onChange((curr) => curr.filter((x) => x.id !== o.id));
-                    }}
-                    className="rounded-md p-2 text-destructive hover:bg-destructive/10"
-                    title="Delete order"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onCloneOrder(o)}
+                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium hover:bg-accent"
+                      title="Clone (unshipped items only)"
+                    >
+                      <Copy className="size-3.5" /> Clone
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Delete order from ${o.customerName}?`))
+                          onChange((curr) => curr.filter((x) => x.id !== o.id));
+                      }}
+                      className="rounded-md p-2 text-destructive hover:bg-destructive/10"
+                      title="Delete order"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
                 </div>
+
+                {unshipped.length > 0 && (
+                  <div className="border-t border-border bg-card p-3">
+                    {unshipped.length === 1 ? (
+                      <button
+                        onClick={() => onCreateShipment(o.id, [unshipped[0].id])}
+                        className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+                      >
+                        <Package className="size-4" /> Ship & Complete
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setSplitFor(o.id)}
+                        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                      >
+                        <Package className="size-4" /> Split & Ship
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
         );
       })}
+
+      {splitOrder && (
+        <SplitShipModal
+          order={splitOrder}
+          onCancel={() => setSplitFor(null)}
+          onConfirm={(ids) => {
+            onCreateShipment(splitOrder.id, ids);
+            setSplitFor(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
 function InlineEditHeader({
   order,
+  customers,
+  onRegisterCustomer,
   onCancel,
   onSave,
 }: {
   order: Order;
+  customers: Customer[];
+  onRegisterCustomer?: (name: string) => void;
   onCancel: () => void;
-  onSave: (name: string, date: string) => void;
+  onSave: (name: string, date: string, notes: string | null, priority: Priority) => void;
 }) {
   const [name, setName] = useState(order.customerName);
   const [date, setDate] = useState(order.datePlaced);
+  const [notes, setNotes] = useState(order.notes ?? "");
+  const [priority, setPriority] = useState<Priority>(order.priority);
   const canSave = name.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
+
   return (
     <div className="space-y-2 px-3 py-3">
-      <input
-        autoFocus
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Customer name"
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-      />
+      <CustomerCombo value={name} onChange={setName} customers={customers} autoFocus />
       <div className="flex items-center gap-2">
         <input
           type="date"
@@ -251,16 +369,30 @@ function InlineEditHeader({
           onChange={(e) => setDate(e.target.value)}
           className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
         />
+        <PrioritySelect value={priority} onChange={setPriority} />
+      </div>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Notes (optional)"
+        rows={2}
+        className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+      />
+      <div className="flex gap-2">
         <button
           onClick={onCancel}
-          className="rounded-md border border-border px-2.5 py-2 text-xs font-medium hover:bg-accent"
+          className="flex-1 rounded-md border border-border px-2.5 py-2 text-xs font-medium hover:bg-accent"
         >
           Cancel
         </button>
         <button
           disabled={!canSave}
-          onClick={() => onSave(name.trim(), date)}
-          className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          onClick={() => {
+            const n = name.trim();
+            onRegisterCustomer?.(n);
+            onSave(n, date, notes.trim() || null, priority);
+          }}
+          className="flex-[2] inline-flex items-center justify-center gap-1 rounded-md bg-primary px-2.5 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           <Check className="size-3.5" /> Save
         </button>
@@ -271,70 +403,55 @@ function InlineEditHeader({
 
 function ItemRow({
   item,
-  onChange,
   onRemove,
+  onQtyChange,
 }: {
   item: OrderItem;
-  onChange: (next: OrderItem) => void;
   onRemove: () => void;
+  onQtyChange: (q: number) => void;
 }) {
-  const done = item.quantityFulfilled >= item.quantityOrdered;
   return (
     <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0">
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}>
+        <p
+          className={`truncate text-sm font-medium ${item.shipped ? "text-muted-foreground line-through" : ""}`}
+        >
           {item.productName}
-        </p>
-        <p className="text-[11px] text-muted-foreground">
-          Ordered {item.quantityOrdered} · Remaining {Math.max(0, item.quantityOrdered - item.quantityFulfilled)}
+          {item.shipped && (
+            <span className="ml-1.5 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+              Shipped ✓
+            </span>
+          )}
         </p>
       </div>
-      <NumInput
-        value={item.quantityFulfilled}
-        max={item.quantityOrdered}
-        onChange={(v) => onChange({ ...item, quantityFulfilled: Math.max(0, Math.min(v, item.quantityOrdered)) })}
-        label="Done"
-      />
-      <NumInput
-        value={item.quantityOrdered}
-        onChange={(v) => onChange({ ...item, quantityOrdered: Math.max(1, v) })}
-        label="Qty"
-      />
-      <button
-        onClick={onRemove}
-        className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-        title="Remove item"
-      >
-        <X className="size-4" />
-      </button>
+      {!item.shipped && (
+        <>
+          <label className="flex flex-col items-center text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span>Qty</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={item.quantityOrdered}
+              onChange={(e) => onQtyChange(parseInt(e.target.value || "0", 10))}
+              className="w-16 rounded border border-input bg-background px-1.5 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
+            />
+          </label>
+          <button
+            onClick={onRemove}
+            className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            title="Remove item"
+          >
+            <X className="size-4" />
+          </button>
+        </>
+      )}
+      {item.shipped && (
+        <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+          ×{item.quantityOrdered}
+        </span>
+      )}
     </div>
-  );
-}
-
-function NumInput({
-  value,
-  onChange,
-  max,
-  label,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  max?: number;
-  label: string;
-}) {
-  return (
-    <label className="flex flex-col items-center text-[10px] uppercase tracking-wide text-muted-foreground">
-      <span>{label}</span>
-      <input
-        type="number"
-        inputMode="numeric"
-        min={0}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value || "0", 10))}
-        className="w-14 rounded border border-input bg-background px-1.5 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
-      />
-    </label>
   );
 }
 
@@ -379,32 +496,121 @@ function AddItemInline({
   );
 }
 
+function PrioritySelect({
+  value,
+  onChange,
+}: {
+  value: Priority;
+  onChange: (p: Priority) => void;
+}) {
+  return (
+    <div className="flex gap-1">
+      {(["high", "normal", "low"] as const).map((p) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onChange(p)}
+          className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase ${priorityChipClass(p, value === p)}`}
+        >
+          {p}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CustomerCombo({
+  value,
+  onChange,
+  customers,
+  autoFocus,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  customers: Customer[];
+  autoFocus?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const q = value.trim().toLowerCase();
+  const matches = q
+    ? customers.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 6)
+    : customers.slice(0, 6);
+
+  return (
+    <div className="relative">
+      <input
+        autoFocus={autoFocus}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Customer name"
+        className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-base text-foreground focus:border-primary focus:outline-none"
+      />
+      {open && matches.length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+          {matches.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(c.name);
+                setOpen(false);
+              }}
+              className="block w-full border-b border-border/60 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-accent"
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NewOrderForm({
   catalog,
+  customers,
   onCancel,
   onSave,
   onRegisterItem,
+  onRegisterCustomer,
 }: {
   catalog: readonly string[];
+  customers: Customer[];
   onCancel: () => void;
   onSave: (o: Order) => void;
   onRegisterItem?: (name: string) => void;
+  onRegisterCustomer?: (name: string) => void;
 }) {
   const [customer, setCustomer] = useState("");
   const [date, setDate] = useState(todayISO());
+  const [notes, setNotes] = useState("");
+  const [priority, setPriority] = useState<Priority>("normal");
   const [items, setItems] = useState<OrderItem[]>([]);
 
   const existing = new Set(items.map((i) => i.productName));
-  const canSave = customer.trim().length > 0 && items.length > 0 && items.every((i) => i.quantityOrdered > 0);
+  const canSave =
+    customer.trim().length > 0 && items.length > 0 && items.every((i) => i.quantityOrdered > 0);
 
   function save() {
     if (!canSave) return;
+    const name = customer.trim();
+    onRegisterCustomer?.(name);
     onSave({
       id: uid(),
-      customerName: customer.trim(),
+      customerName: name,
       datePlaced: date,
-      items,
+      notes: notes.trim() || null,
+      priority,
       archived: false,
+      dateArchived: null,
+      shipmentIds: [],
+      items,
     });
   }
 
@@ -417,23 +623,32 @@ function NewOrderForm({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="col-span-2 text-xs font-medium text-muted-foreground">
+      <div className="space-y-2">
+        <label className="block text-xs font-medium text-muted-foreground">
           Customer
-          <input
-            value={customer}
-            onChange={(e) => setCustomer(e.target.value)}
-            placeholder="e.g. Rajesh Plumbing"
-            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2.5 text-base text-foreground focus:border-primary focus:outline-none"
-          />
+          <div className="mt-1">
+            <CustomerCombo value={customer} onChange={setCustomer} customers={customers} />
+          </div>
         </label>
-        <label className="text-xs font-medium text-muted-foreground">
-          Date
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2.5 text-base text-foreground focus:border-primary focus:outline-none"
+        <div className="flex items-end gap-2">
+          <label className="flex-1 text-xs font-medium text-muted-foreground">
+            Date
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2.5 text-base text-foreground focus:border-primary focus:outline-none"
+            />
+          </label>
+          <PrioritySelect value={priority} onChange={setPriority} />
+        </div>
+        <label className="block text-xs font-medium text-muted-foreground">
+          Notes (optional)
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className="mt-1 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
           />
         </label>
       </div>
@@ -447,7 +662,7 @@ function NewOrderForm({
             onRegisterItem?.(name);
             setItems((curr) => [
               ...curr,
-              { productName: name, quantityOrdered: 0, quantityFulfilled: 0 },
+              { id: uid(), productName: name, quantityOrdered: 1, shipped: false },
             ]);
           }}
         />
@@ -456,17 +671,25 @@ function NewOrderForm({
       {items.length > 0 && (
         <div className="space-y-1 rounded-md border border-border">
           {items.map((it, idx) => (
-            <div key={`${it.productName}-${idx}`} className="flex items-center gap-2 border-b border-border/60 px-3 py-2 last:border-b-0">
+            <div
+              key={it.id}
+              className="flex items-center gap-2 border-b border-border/60 px-3 py-2 last:border-b-0"
+            >
               <p className="min-w-0 flex-1 truncate text-sm">{it.productName}</p>
               <input
                 type="number"
                 inputMode="numeric"
-                min={0}
+                min={1}
                 value={it.quantityOrdered}
                 onChange={(e) =>
                   setItems((curr) =>
                     curr.map((x, i) =>
-                      i === idx ? { ...x, quantityOrdered: Math.max(0, parseInt(e.target.value || "0", 10)) } : x,
+                      i === idx
+                        ? {
+                            ...x,
+                            quantityOrdered: Math.max(0, parseInt(e.target.value || "0", 10)),
+                          }
+                        : x,
                     ),
                   )
                 }

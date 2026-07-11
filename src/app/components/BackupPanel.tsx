@@ -1,20 +1,22 @@
 import { useRef, useState } from "react";
 import { X, Download, Upload, Copy, Share2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import type { Order } from "../types";
+import type { Order, Shipment } from "../types";
 import { buildExportText } from "../exporter";
 import { downloadBackup, parseBackup } from "../backup";
 import { copyText, shareText } from "../share";
 
 export function BackupPanel({
   orders,
+  shipments,
   customItems,
   onRestore,
   onClose,
 }: {
   orders: Order[];
+  shipments: Shipment[];
   customItems: string[];
-  onRestore: (orders: Order[], customItems: string[]) => void;
+  onRestore: (orders: Order[], shipments: Shipment[], customItems: string[]) => void;
   onClose: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -26,10 +28,10 @@ export function BackupPanel({
       const text = await file.text();
       const data = parseBackup(text);
       const ok = confirm(
-        `Restore from backup?\n\nThis will REPLACE your current data with:\n• ${data.orders.length} orders\n• ${data.customItems.length} custom items\n\nThis cannot be undone.`,
+        `Restore from backup?\n\nThis will REPLACE your current data with:\n• ${data.orders.length} orders\n• ${data.shipments.length} shipments\n• ${data.customItems.length} custom items\n\nThis cannot be undone.`,
       );
       if (!ok) return;
-      onRestore(data.orders, data.customItems);
+      onRestore(data.orders, data.shipments, data.customItems);
       toast.success("Restored from backup");
       onClose();
     } catch (err) {
@@ -41,7 +43,10 @@ export function BackupPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+      onClick={onClose}
+    >
       <div
         className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-card p-4 shadow-xl sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -58,7 +63,7 @@ export function BackupPanel({
             Full backup
           </h3>
           <button
-            onClick={() => downloadBackup(orders, customItems)}
+            onClick={() => downloadBackup(orders, shipments, customItems)}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             <Download className="size-4" /> Download backup (.json)
@@ -93,7 +98,7 @@ export function BackupPanel({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={async () => {
-                const ok = await copyText(buildExportText(orders));
+                const ok = await copyText(buildExportText(orders, shipments));
                 toast[ok ? "success" : "error"](ok ? "Copied" : "Could not copy");
               }}
               className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card py-3 text-sm font-medium hover:bg-accent"
@@ -103,7 +108,7 @@ export function BackupPanel({
             <button
               onClick={async () => {
                 try {
-                  await shareText(buildExportText(orders));
+                  await shareText(buildExportText(orders, shipments));
                 } catch {
                   /* ignore */
                 }

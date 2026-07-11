@@ -6,11 +6,20 @@ import { matchesAllTokens } from "../search";
 import { BRANDS } from "../brands";
 import { daysSince, pendingLevel, pendingBadgeClass } from "../pending";
 
+const PRIORITY_ORDER: Record<Order["priority"], number> = { high: 0, normal: 1, low: 2 };
+
 export function ProductionTab({ orders }: { orders: Order[] }) {
-  const rows = useMemo(() => computeProduction(orders), [orders]);
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<Order["priority"] | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+
+  const scopedOrders = useMemo(
+    () => (priorityFilter ? orders.filter((o) => o.priority === priorityFilter) : orders),
+    [orders, priorityFilter],
+  );
+
+  const rows = useMemo(() => computeProduction(scopedOrders), [scopedOrders]);
 
   const filtered = useMemo(() => {
     let list = rows;
@@ -28,6 +37,34 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
 
   return (
     <div className="space-y-3 p-3">
+      <div className="flex flex-wrap gap-1.5">
+        {(["high", "normal", "low"] as const).map((p) => {
+          const active = priorityFilter === p;
+          const cls =
+            p === "high"
+              ? active
+                ? "bg-red-600 text-white"
+                : "border border-red-500/40 text-red-600"
+              : p === "low"
+                ? active
+                  ? "bg-slate-500 text-white"
+                  : "border border-slate-400/40 text-slate-600"
+                : active
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border text-muted-foreground";
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPriorityFilter(active ? null : p)}
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${cls}`}
+            >
+              {p}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="flex flex-wrap gap-1.5">
         {BRANDS.map((b) => {
           const active = brand === b;
@@ -81,14 +118,23 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           {filtered.map((row) => {
             const isOpen = open[row.productName] ?? false;
+            const sortedBreakdown = [...row.breakdown].sort(
+              (a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority],
+            );
             return (
               <div key={row.productName} className="border-b border-border/60 last:border-b-0">
                 <button
                   onClick={() => setOpen((o) => ({ ...o, [row.productName]: !isOpen }))}
                   className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-accent/40"
                 >
-                  {isOpen ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.productName}</span>
+                  {isOpen ? (
+                    <ChevronDown className="size-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="size-4 text-muted-foreground" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {row.productName}
+                  </span>
                   <span className="rounded-md bg-primary/10 px-2.5 py-1 text-sm font-bold tabular-nums text-primary">
                     {row.totalRemaining}
                   </span>
@@ -97,13 +143,22 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
                   <div className="bg-muted/30 px-3 pb-3 pl-10">
                     <table className="w-full text-xs">
                       <tbody>
-                        {row.breakdown.map((b, i) => {
+                        {sortedBreakdown.map((b, i) => {
                           const days = daysSince(b.datePlaced);
                           const level = pendingLevel(days);
                           return (
                             <tr key={i} className="border-t border-border/40 first:border-t-0">
-                              <td className="py-1.5 pr-2">{b.customerName}</td>
-                              <td className="py-1.5 pr-2 text-muted-foreground">{b.datePlaced}</td>
+                              <td className="py-1.5 pr-2">
+                                {b.customerName}
+                                {b.priority === "high" && (
+                                  <span className="ml-1.5 rounded bg-red-500/15 px-1 text-[10px] font-semibold text-red-600">
+                                    HIGH
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-1.5 pr-2 text-muted-foreground">
+                                {b.datePlaced}
+                              </td>
                               <td className="py-1.5 pr-2">
                                 {level && (
                                   <span
@@ -113,7 +168,9 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
                                   </span>
                                 )}
                               </td>
-                              <td className="py-1.5 text-right font-semibold tabular-nums">{b.remaining}</td>
+                              <td className="py-1.5 text-right font-semibold tabular-nums">
+                                {b.remaining}
+                              </td>
                             </tr>
                           );
                         })}

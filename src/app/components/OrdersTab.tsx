@@ -241,20 +241,6 @@ export function OrdersTab({
                         ),
                       )
                     }
-                    onQtyChange={(q) =>
-                      onChange((curr) =>
-                        curr.map((x) =>
-                          x.id === o.id
-                            ? {
-                                ...x,
-                                items: x.items.map((y, i) =>
-                                  i === idx ? { ...y, quantityOrdered: Math.max(1, q) } : y,
-                                ),
-                              }
-                            : x,
-                        ),
-                      )
-                    }
                   />
                 ))}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-muted/30 px-3 py-2">

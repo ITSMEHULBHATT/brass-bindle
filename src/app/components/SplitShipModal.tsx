@@ -13,8 +13,12 @@ export function SplitShipModal({
 }) {
   const unshipped = order.items.filter((i) => !i.shipped);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const selectedIds = unshipped.filter((i) => selected[i.id]).map((i) => i.id);
-  const remainingCount = unshipped.length - selectedIds.length;
+  const selectedItems = unshipped.filter((i) => selected[i.id]);
+  const selectedIds = selectedItems.map((i) => i.id);
+  const remainingItems = unshipped.filter((i) => !selected[i.id]);
+  const selectedUnits = selectedItems.reduce((s, i) => s + i.quantityOrdered, 0);
+  const remainingUnits = remainingItems.reduce((s, i) => s + i.quantityOrdered, 0);
+  const remainingCount = remainingItems.length;
 
   function toggle(id: string) {
     setSelected((s) => ({ ...s, [id]: !s[id] }));

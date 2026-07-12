@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { Order, OrderItem, Customer, Priority } from "../types";
 import { ProductPicker } from "./ProductPicker";
-import { SplitShipModal } from "./SplitShipModal";
+
 import { daysSince, pendingLevel, pendingBadgeClass } from "../pending";
 
 interface Props {
@@ -59,7 +59,7 @@ export function OrdersTab({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<Record<string, boolean>>({});
   const [customerQuery, setCustomerQuery] = useState("");
-  const [splitFor, setSplitFor] = useState<string | null>(null);
+  
 
   const filtered = useMemo(() => {
     const q = customerQuery.trim().toLowerCase();
@@ -71,7 +71,7 @@ export function OrdersTab({
     });
   }, [orders, customerQuery]);
 
-  const splitOrder = splitFor ? orders.find((o) => o.id === splitFor) : null;
+  
 
   return (
     <div className="space-y-3 p-3">
@@ -293,21 +293,12 @@ export function OrdersTab({
 
                 {unshipped.length > 0 && (
                   <div className="border-t border-border bg-card p-3">
-                    {unshipped.length === 1 ? (
-                      <button
-                        onClick={() => onCreateShipment(o.id, [unshipped[0].id])}
-                        className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
-                      >
-                        <Package className="size-4" /> Ship & Complete
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setSplitFor(o.id)}
-                        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
-                      >
-                        <Package className="size-4" /> Split & Ship
-                      </button>
-                    )}
+                    <button
+                      onClick={() => onCreateShipment(o.id, unshipped.map((i) => i.id))}
+                      className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+                    >
+                      <Package className="size-4" /> Ship & Complete
+                    </button>
                   </div>
                 )}
               </div>
@@ -315,17 +306,6 @@ export function OrdersTab({
           </div>
         );
       })}
-
-      {splitOrder && (
-        <SplitShipModal
-          order={splitOrder}
-          onCancel={() => setSplitFor(null)}
-          onConfirm={(ids) => {
-            onCreateShipment(splitOrder.id, ids);
-            setSplitFor(null);
-          }}
-        />
-      )}
     </div>
   );
 }

@@ -187,16 +187,20 @@ export function OrdersTab({
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={`h-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
-                        style={{ width: `${pct}%` }}
-                      />
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
                     </div>
-                    <span className="w-24 shrink-0 text-right text-[11px] font-medium tabular-nums text-muted-foreground">
-                      {shippedItems}/{totalItems} shipped
-                    </span>
+                    <p className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                      {shippedItems}/{totalItems} items shipped ·{" "}
+                      {o.items.filter((i) => i.shipped).reduce((s, i) => s + i.quantityOrdered, 0)}/
+                      {o.items.reduce((s, i) => s + i.quantityOrdered, 0)} units shipped
+                    </p>
                   </div>
                   {o.notes && (
                     <p className="mt-1.5 flex items-start gap-1 text-[11px] text-muted-foreground">

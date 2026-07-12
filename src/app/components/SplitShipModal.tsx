@@ -13,8 +13,12 @@ export function SplitShipModal({
 }) {
   const unshipped = order.items.filter((i) => !i.shipped);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const selectedIds = unshipped.filter((i) => selected[i.id]).map((i) => i.id);
-  const remainingCount = unshipped.length - selectedIds.length;
+  const selectedItems = unshipped.filter((i) => selected[i.id]);
+  const selectedIds = selectedItems.map((i) => i.id);
+  const remainingItems = unshipped.filter((i) => !selected[i.id]);
+  const selectedUnits = selectedItems.reduce((s, i) => s + i.quantityOrdered, 0);
+  const remainingUnits = remainingItems.reduce((s, i) => s + i.quantityOrdered, 0);
+  const remainingCount = remainingItems.length;
 
   function toggle(id: string) {
     setSelected((s) => ({ ...s, [id]: !s[id] }));
@@ -61,8 +65,8 @@ export function SplitShipModal({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{it.productName}</p>
                 </div>
-                <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums">
-                  ×{it.quantityOrdered}
+                <span className="shrink-0 rounded bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums">
+                  Qty: {it.quantityOrdered}
                 </span>
               </li>
             );
@@ -71,8 +75,11 @@ export function SplitShipModal({
 
         <div className="mt-3 rounded-md bg-muted/50 px-3 py-2 text-xs">
           Shipping <span className="font-semibold">{selectedIds.length}</span> item
-          {selectedIds.length === 1 ? "" : "s"} — {remainingCount} item
-          {remainingCount === 1 ? "" : "s"} will remain active
+          {selectedIds.length === 1 ? "" : "s"} (
+          <span className="font-semibold">{selectedUnits}</span> unit
+          {selectedUnits === 1 ? "" : "s"}) — {remainingCount} item
+          {remainingCount === 1 ? "" : "s"} ({remainingUnits} unit
+          {remainingUnits === 1 ? "" : "s"}) will remain active
         </div>
 
         <div className="mt-3 flex gap-2">

@@ -136,7 +136,7 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
                     {row.productName}
                   </span>
                   <span className="rounded-md bg-primary/10 px-2.5 py-1 text-sm font-bold tabular-nums text-primary">
-                    {row.totalRemaining}
+                    {row.totalRemaining} units
                   </span>
                 </button>
                 {isOpen && (

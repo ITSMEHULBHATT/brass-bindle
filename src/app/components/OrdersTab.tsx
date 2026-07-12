@@ -187,16 +187,20 @@ export function OrdersTab({
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={`h-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
-                        style={{ width: `${pct}%` }}
-                      />
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
                     </div>
-                    <span className="w-24 shrink-0 text-right text-[11px] font-medium tabular-nums text-muted-foreground">
-                      {shippedItems}/{totalItems} shipped
-                    </span>
+                    <p className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                      {shippedItems}/{totalItems} items shipped ·{" "}
+                      {o.items.filter((i) => i.shipped).reduce((s, i) => s + i.quantityOrdered, 0)}/
+                      {o.items.reduce((s, i) => s + i.quantityOrdered, 0)} units shipped
+                    </p>
                   </div>
                   {o.notes && (
                     <p className="mt-1.5 flex items-start gap-1 text-[11px] text-muted-foreground">
@@ -233,20 +237,6 @@ export function OrdersTab({
                         curr.map((x) =>
                           x.id === o.id
                             ? { ...x, items: x.items.filter((_, i) => i !== idx) }
-                            : x,
-                        ),
-                      )
-                    }
-                    onQtyChange={(q) =>
-                      onChange((curr) =>
-                        curr.map((x) =>
-                          x.id === o.id
-                            ? {
-                                ...x,
-                                items: x.items.map((y, i) =>
-                                  i === idx ? { ...y, quantityOrdered: Math.max(1, q) } : y,
-                                ),
-                              }
                             : x,
                         ),
                       )
@@ -404,11 +394,9 @@ function InlineEditHeader({
 function ItemRow({
   item,
   onRemove,
-  onQtyChange,
 }: {
   item: OrderItem;
   onRemove: () => void;
-  onQtyChange: (q: number) => void;
 }) {
   return (
     <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0">
@@ -417,39 +405,25 @@ function ItemRow({
           className={`truncate text-sm font-medium ${item.shipped ? "text-muted-foreground line-through" : ""}`}
         >
           {item.productName}
-          {item.shipped && (
-            <span className="ml-1.5 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-              Shipped ✓
-            </span>
-          )}
         </p>
       </div>
-      {!item.shipped && (
-        <>
-          <label className="flex flex-col items-center text-[10px] uppercase tracking-wide text-muted-foreground">
-            <span>Qty</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={item.quantityOrdered}
-              onChange={(e) => onQtyChange(parseInt(e.target.value || "0", 10))}
-              className="w-16 rounded border border-input bg-background px-1.5 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
-            />
-          </label>
-          <button
-            onClick={onRemove}
-            className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            title="Remove item"
-          >
-            <X className="size-4" />
-          </button>
-        </>
-      )}
-      {item.shipped && (
-        <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
-          ×{item.quantityOrdered}
+      <span
+        className={`shrink-0 rounded px-2 py-0.5 text-xs font-semibold tabular-nums ${item.shipped ? "bg-muted text-muted-foreground" : "bg-muted text-foreground"}`}
+      >
+        Qty: {item.quantityOrdered}
+      </span>
+      {item.shipped ? (
+        <span className="shrink-0 rounded bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+          ✓ Shipped
         </span>
+      ) : (
+        <button
+          onClick={onRemove}
+          className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          title="Remove item"
+        >
+          <X className="size-4" />
+        </button>
       )}
     </div>
   );

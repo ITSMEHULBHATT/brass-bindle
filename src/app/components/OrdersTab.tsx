@@ -394,6 +394,42 @@ function InlineEditHeader({
 function ItemRow({
   item,
   onRemove,
+}: {
+  item: OrderItem;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0">
+      <div className="min-w-0 flex-1">
+        <p
+          className={`truncate text-sm font-medium ${item.shipped ? "text-muted-foreground line-through" : ""}`}
+        >
+          {item.productName}
+        </p>
+      </div>
+      <span
+        className={`shrink-0 rounded px-2 py-0.5 text-xs font-semibold tabular-nums ${item.shipped ? "bg-muted text-muted-foreground" : "bg-muted text-foreground"}`}
+      >
+        Qty: {item.quantityOrdered}
+      </span>
+      {item.shipped ? (
+        <span className="shrink-0 rounded bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+          ✓ Shipped
+        </span>
+      ) : (
+        <button
+          onClick={onRemove}
+          className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          title="Remove item"
+        >
+          <X className="size-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+  item,
+  onRemove,
   onQtyChange,
 }: {
   item: OrderItem;

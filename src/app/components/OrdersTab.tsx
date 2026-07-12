@@ -428,58 +428,6 @@ function ItemRow({
     </div>
   );
 }
-  item,
-  onRemove,
-  onQtyChange,
-}: {
-  item: OrderItem;
-  onRemove: () => void;
-  onQtyChange: (q: number) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0">
-      <div className="min-w-0 flex-1">
-        <p
-          className={`truncate text-sm font-medium ${item.shipped ? "text-muted-foreground line-through" : ""}`}
-        >
-          {item.productName}
-          {item.shipped && (
-            <span className="ml-1.5 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-              Shipped ✓
-            </span>
-          )}
-        </p>
-      </div>
-      {!item.shipped && (
-        <>
-          <label className="flex flex-col items-center text-[10px] uppercase tracking-wide text-muted-foreground">
-            <span>Qty</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={item.quantityOrdered}
-              onChange={(e) => onQtyChange(parseInt(e.target.value || "0", 10))}
-              className="w-16 rounded border border-input bg-background px-1.5 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
-            />
-          </label>
-          <button
-            onClick={onRemove}
-            className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            title="Remove item"
-          >
-            <X className="size-4" />
-          </button>
-        </>
-      )}
-      {item.shipped && (
-        <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
-          ×{item.quantityOrdered}
-        </span>
-      )}
-    </div>
-  );
-}
 
 function AddItemInline({
   catalog,

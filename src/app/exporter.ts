@@ -1,45 +1,34 @@
-import type { Order, Shipment } from "./types";
+import type { Order } from "./types";
 import { computeProduction } from "./production";
 
-function priorityLabel(p: Order["priority"]): string {
-  return p === "high" ? "High" : p === "low" ? "Low" : "Normal";
+function fmtDate(d: string): string {
+  return d;
 }
 
-export function buildExportText(orders: Order[], shipments: Shipment[]): string {
+export function buildExportText(orders: Order[]): string {
   const active = orders.filter((o) => !o.archived);
   const archived = orders.filter((o) => o.archived);
   const production = computeProduction(active);
-  const shipmentsByOrder = new Map<string, Shipment[]>();
-  for (const s of shipments) {
-    const list = shipmentsByOrder.get(s.orderId) ?? [];
-    list.push(s);
-    shipmentsByOrder.set(s.orderId, list);
-  }
 
   const lines: string[] = [];
-  lines.push("=== SUPERIOR BATH FITTINGS — SUMMARY ===");
+  lines.push("=== BRASS ORDERS — SUMMARY ===");
   lines.push(`Generated: ${new Date().toLocaleString()}`);
   lines.push("");
 
   lines.push(`--- ACTIVE ORDERS (${active.length}) ---`);
   if (active.length === 0) lines.push("(none)");
   for (const o of active) {
+    const totalOrd = o.items.reduce((s, i) => s + i.quantityOrdered, 0);
+    const totalFul = o.items.reduce((s, i) => s + i.quantityFulfilled, 0);
+    const pct = totalOrd ? Math.round((totalFul / totalOrd) * 100) : 0;
     lines.push("");
-    lines.push(
-      `Customer: ${o.customerName} | Placed: ${o.datePlaced} | Priority: ${priorityLabel(o.priority)}`,
-    );
-    if (o.notes) lines.push(`  Notes: ${o.notes}`);
-    const orderShipments = (shipmentsByOrder.get(o.id) ?? []).sort(
-      (a, b) => a.shipmentNumber - b.shipmentNumber,
-    );
-    for (const s of orderShipments) {
-      const itemsTxt = s.items.map((i) => `${i.productName} x${i.quantityOrdered}`).join(", ");
-      lines.push(`  Shipment ${s.shipmentNumber} — ${s.shippedAt.slice(0, 10)}: ${itemsTxt}`);
-    }
-    const remaining = o.items.filter((i) => !i.shipped);
-    if (remaining.length > 0) {
-      const rTxt = remaining.map((i) => `${i.productName} x${i.quantityOrdered}`).join(", ");
-      lines.push(`  Remaining: ${rTxt} (active)`);
+    lines.push(`• ${o.customerName}  (${fmtDate(o.datePlaced)})  — ${pct}% done`);
+    for (const it of o.items) {
+      const remain = it.quantityOrdered - it.quantityFulfilled;
+      lines.push(
+        `    - ${it.productName}: ${it.quantityFulfilled}/${it.quantityOrdered}` +
+          (remain > 0 ? `  (${remain} remaining)` : `  ✓`),
+      );
     }
   }
 
@@ -51,20 +40,14 @@ export function buildExportText(orders: Order[], shipments: Shipment[]): string 
   }
 
   lines.push("");
-  lines.push(`--- COMPLETED ORDERS (${archived.length}) ---`);
+  lines.push(`--- ARCHIVED ORDERS (${archived.length}) ---`);
   if (archived.length === 0) lines.push("(none)");
   for (const o of archived) {
     const totalOrd = o.items.reduce((s, i) => s + i.quantityOrdered, 0);
     lines.push("");
-    lines.push(
-      `Customer: ${o.customerName} | Placed: ${o.datePlaced} | Completed: ${o.dateArchived?.slice(0, 10) ?? "?"} | ${totalOrd} units`,
-    );
-    const orderShipments = (shipmentsByOrder.get(o.id) ?? []).sort(
-      (a, b) => a.shipmentNumber - b.shipmentNumber,
-    );
-    for (const s of orderShipments) {
-      const itemsTxt = s.items.map((i) => `${i.productName} x${i.quantityOrdered}`).join(", ");
-      lines.push(`  Shipment ${s.shipmentNumber} — ${s.shippedAt.slice(0, 10)}: ${itemsTxt}`);
+    lines.push(`• ${o.customerName}  (${fmtDate(o.datePlaced)})  — ${totalOrd} units`);
+    for (const it of o.items) {
+      lines.push(`    - ${it.productName}: ${it.quantityOrdered}`);
     }
   }
 

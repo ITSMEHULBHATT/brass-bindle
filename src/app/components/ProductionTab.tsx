@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, X, Factory } from "lucide-react";
 import type { Order } from "../types";
 import { computeProduction } from "../production";
 import { matchesAllTokens } from "../search";
@@ -27,7 +27,7 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
   const grandTotal = filtered.reduce((s, r) => s + r.totalRemaining, 0);
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-3 px-4 py-3">
       <div className="flex flex-wrap gap-1.5">
         {BRANDS.map((b) => {
           const active = brand === b;
@@ -36,10 +36,10 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
               key={b}
               type="button"
               onClick={() => setBrand(active ? null : b)}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide transition-colors ${
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide transition-transform active:scale-[0.96] ${
                 active
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border bg-card text-muted-foreground hover:bg-accent"
+                  ? "border border-primary bg-primary text-primary-foreground"
+                  : "border border-border bg-[#F3F4F6] text-[#374151]"
               }`}
             >
               {b}
@@ -54,7 +54,7 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
           placeholder={brand ? `Filter ${brand}…` : "Filter (e.g. alfa bib)"}
-          className="w-full rounded-md border border-input bg-background px-9 py-3 text-base focus:border-primary focus:outline-none"
+          className="h-11 w-full rounded-[10px] border border-border bg-card px-9 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/10"
         />
         {query && (
           <button
@@ -70,50 +70,62 @@ export function ProductionTab({ orders }: { orders: Order[] }) {
         <span className="text-muted-foreground">
           {filtered.length} product{filtered.length === 1 ? "" : "s"} pending
         </span>
-        <span className="font-semibold tabular-nums">{grandTotal} units total</span>
+        <span className="font-semibold tabular-nums text-primary">{grandTotal} units total</span>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-          {rows.length === 0 ? "Nothing in production. All caught up!" : "No matches."}
+        <div className="flex min-h-[40vh] flex-col items-center justify-center px-6 text-center">
+          <Factory className="size-12 text-[#D1D5DB]" strokeWidth={1.5} />
+          <h3 className="mt-3 text-[15px] font-semibold text-[#374151]">
+            {rows.length === 0 ? "Nothing to produce" : "No matches"}
+          </h3>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {rows.length === 0
+              ? "All caught up — pending items will appear here."
+              : "Try a different brand or search term."}
+          </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="space-y-[10px]">
           {filtered.map((row) => {
             const isOpen = open[row.productName] ?? false;
             return (
-              <div key={row.productName} className="border-b border-border/60 last:border-b-0">
+              <div
+                key={row.productName}
+                className="overflow-hidden rounded-xl border border-border bg-card"
+                style={{ boxShadow: "var(--shadow-card)" }}
+              >
                 <button
                   onClick={() => setOpen((o) => ({ ...o, [row.productName]: !isOpen }))}
-                  className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-accent/40"
+                  className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-[#FAFAFA]"
                 >
                   {isOpen ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.productName}</span>
-                  <span className="rounded-md bg-primary/10 px-2.5 py-1 text-sm font-bold tabular-nums text-primary">
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-foreground">{row.productName}</span>
+                  <span className="text-[14px] font-bold tabular-nums text-primary">
                     {row.totalRemaining}
                   </span>
                 </button>
                 {isOpen && (
-                  <div className="bg-muted/30 px-3 pb-3 pl-10">
+                  <div className="border-t border-[#F3F4F6] bg-[#FAFAFA] px-3 py-2 pl-10">
                     <table className="w-full text-xs">
                       <tbody>
                         {row.breakdown.map((b, i) => {
                           const days = daysSince(b.datePlaced);
                           const level = pendingLevel(days);
                           return (
-                            <tr key={i} className="border-t border-border/40 first:border-t-0">
-                              <td className="py-1.5 pr-2">{b.customerName}</td>
+                            <tr key={i} className="border-t border-[#F3F4F6] first:border-t-0">
+                              <td className="py-1.5 pr-2 text-[#374151]">{b.customerName}</td>
                               <td className="py-1.5 pr-2 text-muted-foreground">{b.datePlaced}</td>
                               <td className="py-1.5 pr-2">
                                 {level && (
                                   <span
-                                    className={`rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${pendingBadgeClass(level)}`}
+                                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${pendingBadgeClass(level)}`}
                                   >
                                     {days}d
                                   </span>
                                 )}
                               </td>
-                              <td className="py-1.5 text-right font-semibold tabular-nums">{b.remaining}</td>
+                              <td className="py-1.5 text-right font-bold tabular-nums text-primary">{b.remaining}</td>
                             </tr>
                           );
                         })}

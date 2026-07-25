@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "dist",
     "build:dev": "vite build --mode development",
-    "build:mobile": "vite build --config vite.mobile.config.ts",
+    "build:mobile": "dist-mobile",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."

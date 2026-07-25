@@ -28,7 +28,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build web assets
-        run: npm run build
+        run: npm run build:mobile
 
       - name: Add Android platform
         run: npx cap add android

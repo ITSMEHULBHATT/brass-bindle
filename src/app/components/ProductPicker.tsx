@@ -81,10 +81,10 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
                 setActiveIdx(0);
                 inputRef.current?.focus();
               }}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide transition-colors ${
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide transition-transform active:scale-[0.96] ${
                 active
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border bg-card text-muted-foreground hover:bg-accent"
+                  ? "bg-primary text-primary-foreground border border-primary"
+                  : "border border-border bg-[#F3F4F6] text-[#374151] hover:bg-accent"
               }`}
             >
               {b}
@@ -101,7 +101,8 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
           onChange={(e) => handleQueryChange(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={brand ? `Search ${brand}…` : "Search products (try: alfa bib)"}
-          className="w-full rounded-md border border-input bg-background px-9 py-3 text-base outline-none focus:border-primary"
+          className="w-full rounded-[10px] border border-border bg-card px-9 py-3 text-base outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(26,43,74,0.08)]"
+          style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
           autoComplete="off"
         />
         {query && (

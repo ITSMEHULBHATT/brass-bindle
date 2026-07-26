@@ -32,10 +32,10 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build (mobile/PWA config with base path)
-        run: npx vite build --config vite.mobile.config.ts --outDir dist-mobile
+        run: npx vite build --config vite.mobile.config.ts --outDir dist
 
       - name: Add SPA 404 fallback
-        run: cp dist-mobile/index.html dist-mobile/404.html
+        run: cp dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -43,7 +43,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist-mobile
+          path: ./dist
 
   deploy:
     needs: build

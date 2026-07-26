@@ -20,9 +20,6 @@ function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const CARD_SHADOW = { boxShadow: "var(--shadow-card)" } as const;
-const CTA_SHADOW = { boxShadow: "var(--shadow-cta)" } as const;
-
 export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) {
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -36,14 +33,13 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
   }, [orders, customerQuery]);
 
   return (
-    <div className="space-y-3 px-4 py-3">
+    <div className="space-y-3 p-3">
       {!creating && (
         <button
           onClick={() => setCreating(true)}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-cta text-[15px] font-semibold text-cta-foreground transition-all hover:brightness-90 active:scale-[0.98]"
-          style={CTA_SHADOW}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-4 text-base font-semibold text-primary-foreground shadow-sm hover:opacity-90"
         >
-          <Plus className="size-[18px]" strokeWidth={2.5} /> New order
+          <Plus className="size-5" /> New order
         </button>
       )}
 
@@ -66,7 +62,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
             value={customerQuery}
             onChange={(e) => setCustomerQuery(e.target.value)}
             placeholder="Search customer name…"
-            className="h-11 w-full rounded-[10px] border border-border bg-card px-9 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/10"
+            className="w-full rounded-md border border-input bg-background px-9 py-2.5 text-sm focus:border-primary focus:outline-none"
           />
           {customerQuery && (
             <button
@@ -80,19 +76,13 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
       )}
 
       {orders.length === 0 && !creating && (
-        <div className="flex min-h-[50vh] flex-col items-center justify-center px-6 text-center">
-          <svg className="size-12 text-[#D1D5DB]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="4" y="4" width="16" height="18" rx="2" />
-            <path d="M9 2h6v4H9z" />
-            <path d="M9 12h6M9 16h4" />
-          </svg>
-          <h3 className="mt-3 text-[15px] font-semibold text-[#374151]">No active orders</h3>
-          <p className="mt-1 text-[13px] text-muted-foreground">Tap + New order to get started.</p>
+        <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+          No active orders. Tap “New order” to start.
         </div>
       )}
 
       {orders.length > 0 && filtered.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
           No customers match “{customerQuery}”.
         </div>
       )}
@@ -107,14 +97,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
         const level = pendingLevel(days);
 
         return (
-          <div
-            key={o.id}
-            className="relative overflow-hidden rounded-xl border border-border bg-card"
-            style={CARD_SHADOW}
-          >
-            {/* Priority indicator strip (neutral — no priority model) */}
-            <span className="absolute inset-y-0 left-0 w-1 bg-[#9CA3AF]" aria-hidden />
-
+          <div key={o.id} className="overflow-hidden rounded-lg border border-border bg-card">
             {isEditing ? (
               <InlineEditHeader
                 order={o}
@@ -127,55 +110,53 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                 }}
               />
             ) : (
-              <div className="flex items-start gap-1 pl-4 pr-2 py-3">
+              <div className="flex items-start gap-1 px-3 py-3">
                 <button
                   onClick={() => setExpanded((e) => ({ ...e, [o.id]: !isOpen }))}
                   className="min-w-0 flex-1 text-left"
                 >
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <h3 className="truncate text-[15px] font-semibold text-foreground">
-                      {o.customerName}
-                    </h3>
-                    <span className="shrink-0 text-xs text-[#9CA3AF]">· {o.datePlaced}</span>
+                    <h3 className="truncate text-base font-semibold">{o.customerName}</h3>
+                    <span className="shrink-0 text-xs text-muted-foreground">{o.datePlaced}</span>
                     {level && (
                       <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${pendingBadgeClass(level)}`}
+                        className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${pendingBadgeClass(level)}`}
                       >
                         {days}d pending
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 flex items-center gap-2 pr-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#E5E7EB]">
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                       <div
-                        className="h-full bg-success transition-all"
+                        className={`h-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="w-20 shrink-0 text-right text-[11px] font-medium tabular-nums text-muted-foreground">
+                    <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground">
                       {totalFul}/{totalOrd} · {pct}%
                     </span>
                   </div>
                 </button>
                 <button
                   onClick={() => setEditing((e) => ({ ...e, [o.id]: true }))}
-                  className="rounded p-1.5 text-[#9CA3AF] hover:bg-accent"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-accent"
                   title="Edit customer / date"
                 >
-                  <Pencil className="size-5" />
+                  <Pencil className="size-4" />
                 </button>
                 <button
                   onClick={() => setExpanded((e) => ({ ...e, [o.id]: !isOpen }))}
-                  className="rounded p-1.5 text-[#9CA3AF] hover:bg-accent"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-accent"
                   title={isOpen ? "Collapse" : "Expand"}
                 >
-                  {isOpen ? <ChevronUp className="size-5" /> : <ChevronDown className="size-5" />}
+                  {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                 </button>
               </div>
             )}
 
             {isOpen && (
-              <div className="border-t border-[#F3F4F6]">
+              <div className="border-t border-border">
                 {o.items.map((it, idx) => (
                   <ItemRow
                     key={`${it.productName}-${idx}`}
@@ -200,7 +181,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                     }
                   />
                 ))}
-                <div className="flex items-center justify-between gap-2 border-t border-[#F3F4F6] bg-[#FAFAFA] px-3 py-2">
+                <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-3 py-2">
                   <AddItemInline
                     catalog={catalog}
                     existing={new Set(o.items.map((i) => i.productName))}
@@ -255,7 +236,7 @@ function InlineEditHeader({
   const [date, setDate] = useState(order.datePlaced);
   const canSave = name.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
   return (
-    <div className="space-y-2 pl-4 pr-3 py-3">
+    <div className="space-y-2 px-3 py-3">
       <input
         autoFocus
         value={name}
@@ -279,7 +260,7 @@ function InlineEditHeader({
         <button
           disabled={!canSave}
           onClick={() => onSave(name.trim(), date)}
-          className="inline-flex items-center gap-1 rounded-md bg-cta px-2.5 py-2 text-xs font-semibold text-cta-foreground hover:brightness-90 disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           <Check className="size-3.5" /> Save
         </button>
@@ -297,23 +278,14 @@ function ItemRow({
   onChange: (next: OrderItem) => void;
   onRemove: () => void;
 }) {
-  const done = item.quantityOrdered > 0 && item.quantityFulfilled >= item.quantityOrdered;
+  const done = item.quantityFulfilled >= item.quantityOrdered;
   return (
-    <div
-      className={`relative flex items-center gap-2 border-b border-[#F3F4F6] px-4 py-3 last:border-b-0 ${
-        done ? "bg-[#F0FDF4]" : ""
-      }`}
-    >
-      {done && <span className="absolute inset-y-0 left-0 w-[3px] bg-success" aria-hidden />}
+    <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0">
       <div className="min-w-0 flex-1">
-        <p
-          className={`truncate text-[13px] font-medium ${
-            done ? "text-[#15803D] line-through" : "text-foreground"
-          }`}
-        >
+        <p className={`truncate text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}>
           {item.productName}
         </p>
-        <p className="text-[12px] text-[#9CA3AF]">
+        <p className="text-[11px] text-muted-foreground">
           Ordered {item.quantityOrdered} · Remaining {Math.max(0, item.quantityOrdered - item.quantityFulfilled)}
         </p>
       </div>
@@ -351,7 +323,7 @@ function NumInput({
   label: string;
 }) {
   return (
-    <label className="flex flex-col items-center text-[10px] uppercase tracking-wide text-[#9CA3AF]">
+    <label className="flex flex-col items-center text-[10px] uppercase tracking-wide text-muted-foreground">
       <span>{label}</span>
       <input
         type="number"
@@ -360,7 +332,7 @@ function NumInput({
         max={max}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value || "0", 10))}
-        className="w-12 rounded-lg border border-[#D1D5DB] bg-background px-1.5 py-1.5 text-center text-sm font-semibold tabular-nums focus:border-primary focus:outline-none"
+        className="w-14 rounded border border-input bg-background px-1.5 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
       />
     </label>
   );
@@ -437,7 +409,7 @@ function NewOrderForm({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-card p-3" style={CARD_SHADOW}>
+    <div className="space-y-3 rounded-lg border border-border bg-card p-3">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold">New order</h2>
         <button onClick={onCancel} className="rounded p-1 text-muted-foreground hover:bg-accent">
@@ -484,7 +456,7 @@ function NewOrderForm({
       {items.length > 0 && (
         <div className="space-y-1 rounded-md border border-border">
           {items.map((it, idx) => (
-            <div key={`${it.productName}-${idx}`} className="flex items-center gap-2 border-b border-[#F3F4F6] px-3 py-2 last:border-b-0">
+            <div key={`${it.productName}-${idx}`} className="flex items-center gap-2 border-b border-border/60 px-3 py-2 last:border-b-0">
               <p className="min-w-0 flex-1 truncate text-sm">{it.productName}</p>
               <input
                 type="number"
@@ -498,7 +470,7 @@ function NewOrderForm({
                     ),
                   )
                 }
-                className="w-16 rounded-lg border border-[#D1D5DB] bg-background px-2 py-1.5 text-center text-sm font-semibold tabular-nums focus:border-primary focus:outline-none"
+                className="w-16 rounded border border-input bg-background px-2 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
               />
               <button
                 onClick={() => setItems((curr) => curr.filter((_, i) => i !== idx))}
@@ -514,15 +486,14 @@ function NewOrderForm({
       <div className="flex gap-2 pt-1">
         <button
           onClick={onCancel}
-          className="flex-1 rounded-xl border border-border bg-card py-3 text-sm font-medium hover:bg-accent"
+          className="flex-1 rounded-md border border-border bg-card py-3 text-sm font-medium hover:bg-accent"
         >
           Cancel
         </button>
         <button
           onClick={save}
           disabled={!canSave}
-          className="flex-[2] rounded-xl bg-cta py-3 text-sm font-semibold text-cta-foreground transition-all hover:brightness-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          style={CTA_SHADOW}
+          className="flex-[2] rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Save order
         </button>

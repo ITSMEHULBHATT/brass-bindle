@@ -21,6 +21,7 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
     if (autoFocus) inputRef.current?.focus();
   }, [autoFocus]);
 
+  // Auto-deselect brand chip when search text is cleared.
   function handleQueryChange(v: string) {
     setQuery(v);
     if (v.trim() === "") setBrand(null);
@@ -80,10 +81,10 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
                 setActiveIdx(0);
                 inputRef.current?.focus();
               }}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide transition-transform active:scale-[0.96] ${
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide transition-colors ${
                 active
-                  ? "border border-primary bg-primary text-primary-foreground"
-                  : "border border-border bg-[#F3F4F6] text-[#374151]"
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-card text-muted-foreground hover:bg-accent"
               }`}
             >
               {b}
@@ -100,7 +101,7 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
           onChange={(e) => handleQueryChange(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={brand ? `Search ${brand}…` : "Search products (try: alfa bib)"}
-          className="h-11 w-full rounded-[10px] border border-border bg-card px-9 text-sm shadow-sm outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10"
+          className="w-full rounded-md border border-input bg-background px-9 py-3 text-base outline-none focus:border-primary"
           autoComplete="off"
         />
         {query && (
@@ -116,7 +117,7 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
 
       <div
         ref={listRef}
-        className="max-h-72 overflow-y-auto rounded-[10px] border border-border bg-card"
+        className="max-h-72 overflow-y-auto rounded-md border border-border bg-card"
       >
         {results.length === 0 && !query.trim() ? (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">
@@ -135,7 +136,7 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
                   inputRef.current?.focus();
                 }}
                 onMouseEnter={() => setActiveIdx(i)}
-                className={`block w-full border-b border-[#F3F4F6] px-3 py-2.5 text-left text-sm last:border-b-0 ${
+                className={`block w-full border-b border-border/60 px-3 py-2.5 text-left text-sm last:border-b-0 ${
                   i === activeIdx ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
                 }`}
               >
@@ -155,7 +156,7 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
                 className={`block w-full border-t border-border px-3 py-2.5 text-left text-sm font-medium ${
                   activeIdx === results.length
                     ? "bg-accent text-accent-foreground"
-                    : "text-cta hover:bg-accent/50"
+                    : "text-primary hover:bg-accent/50"
                 }`}
               >
                 + Use "{query.trim()}" as custom item
@@ -171,4 +172,5 @@ export function ProductPicker({ catalog, onPick, excludeNames, autoFocus }: Prop
   );
 }
 
+// re-export for tree-shaking convenience
 export { matchesAllTokens };

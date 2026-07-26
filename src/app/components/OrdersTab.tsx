@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, X, ChevronDown, ChevronUp, Pencil, Check, Search } from "lucide-react";
+import { Plus, Trash2, X, ChevronDown, ChevronUp, Pencil, Check, Search, ClipboardList } from "lucide-react";
 import type { Order, OrderItem } from "../types";
 import { ProductPicker } from "./ProductPicker";
-import { daysSince, pendingLevel, pendingBadgeClass } from "../pending";
+import { daysSince, pendingLevel, pendingBadgeClass, pendingStripeClass } from "../pending";
 
 interface Props {
   orders: Order[];
@@ -33,13 +33,14 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
   }, [orders, customerQuery]);
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-2.5 px-4 py-4">
       {!creating && (
         <button
           onClick={() => setCreating(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-4 text-base font-semibold text-primary-foreground shadow-sm hover:opacity-90"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-cta text-cta-foreground text-[15px] font-semibold transition-transform active:scale-[0.98] hover:brightness-95"
+          style={{ height: 52, boxShadow: "var(--shadow-cta)" }}
         >
-          <Plus className="size-5" /> New order
+          <Plus className="size-[18px]" strokeWidth={2.5} /> New Order
         </button>
       )}
 
@@ -62,7 +63,8 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
             value={customerQuery}
             onChange={(e) => setCustomerQuery(e.target.value)}
             placeholder="Search customer name…"
-            className="w-full rounded-md border border-input bg-background px-9 py-2.5 text-sm focus:border-primary focus:outline-none"
+            className="w-full rounded-[10px] border border-border bg-card px-9 text-[14px] text-foreground placeholder:text-muted-foreground outline-none transition-shadow focus:border-primary focus:shadow-[0_0_0_3px_rgba(26,43,74,0.08)]"
+            style={{ height: 44, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
           />
           {customerQuery && (
             <button
@@ -76,13 +78,15 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
       )}
 
       {orders.length === 0 && !creating && (
-        <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-          No active orders. Tap “New order” to start.
-        </div>
+        <EmptyState
+          icon={<ClipboardList className="size-12" strokeWidth={1.5} style={{ color: "#D1D5DB" }} />}
+          title="No active orders"
+          subtitle="Tap + New Order to get started."
+        />
       )}
 
       {orders.length > 0 && filtered.length === 0 && (
-        <div className="rounded-lg border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
           No customers match “{customerQuery}”.
         </div>
       )}
@@ -97,7 +101,14 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
         const level = pendingLevel(days);
 
         return (
-          <div key={o.id} className="overflow-hidden rounded-lg border border-border bg-card">
+          <div
+            key={o.id}
+            className="relative overflow-hidden rounded-xl border border-border bg-card"
+            style={{ boxShadow: "var(--shadow-card)" }}
+          >
+            {/* Left accent stripe */}
+            <span className={`absolute inset-y-0 left-0 w-1 ${pendingStripeClass(level)}`} />
+
             {isEditing ? (
               <InlineEditHeader
                 order={o}
@@ -110,53 +121,53 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                 }}
               />
             ) : (
-              <div className="flex items-start gap-1 px-3 py-3">
+              <div className="flex items-start gap-1 pl-4 pr-2 py-3">
                 <button
                   onClick={() => setExpanded((e) => ({ ...e, [o.id]: !isOpen }))}
                   className="min-w-0 flex-1 text-left"
                 >
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <h3 className="truncate text-base font-semibold">{o.customerName}</h3>
-                    <span className="shrink-0 text-xs text-muted-foreground">{o.datePlaced}</span>
+                    <h3 className="truncate text-[15px] font-semibold text-foreground">{o.customerName}</h3>
+                    <span className="shrink-0 text-xs text-muted-foreground">· {o.datePlaced}</span>
                     {level && (
                       <span
-                        className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${pendingBadgeClass(level)}`}
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${pendingBadgeClass(level)}`}
                       >
                         {days}d pending
                       </span>
                     )}
                   </div>
                   <div className="mt-2 flex items-center gap-2">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
                       <div
-                        className={`h-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                        className={`h-full transition-all ${pct === 100 ? "bg-success" : "bg-primary"}`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground">
+                    <span className="w-20 shrink-0 text-right text-[11px] font-medium tabular-nums text-muted-foreground">
                       {totalFul}/{totalOrd} · {pct}%
                     </span>
                   </div>
                 </button>
                 <button
                   onClick={() => setEditing((e) => ({ ...e, [o.id]: true }))}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-accent"
+                  className="rounded p-2 text-muted-foreground hover:bg-accent"
                   title="Edit customer / date"
                 >
-                  <Pencil className="size-4" />
+                  <Pencil className="size-[18px]" />
                 </button>
                 <button
                   onClick={() => setExpanded((e) => ({ ...e, [o.id]: !isOpen }))}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-accent"
+                  className="rounded p-2 text-muted-foreground hover:bg-accent"
                   title={isOpen ? "Collapse" : "Expand"}
                 >
-                  {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                  {isOpen ? <ChevronUp className="size-[18px]" /> : <ChevronDown className="size-[18px]" />}
                 </button>
               </div>
             )}
 
             {isOpen && (
-              <div className="border-t border-border">
+              <div className="border-t border-[#F3F4F6]">
                 {o.items.map((it, idx) => (
                   <ItemRow
                     key={`${it.productName}-${idx}`}
@@ -181,7 +192,7 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
                     }
                   />
                 ))}
-                <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-3 py-2">
+                <div className="flex items-center justify-between gap-2 border-t border-[#F3F4F6] bg-secondary/40 px-4 py-2.5">
                   <AddItemInline
                     catalog={catalog}
                     existing={new Set(o.items.map((i) => i.productName))}
@@ -223,6 +234,26 @@ export function OrdersTab({ orders, catalog, onChange, onRegisterItem }: Props) 
   );
 }
 
+function EmptyState({
+  icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+      {icon}
+      <p className="text-[15px] font-semibold" style={{ color: "#374151" }}>
+        {title}
+      </p>
+      <p className="text-[13px] text-muted-foreground">{subtitle}</p>
+    </div>
+  );
+}
+
 function InlineEditHeader({
   order,
   onCancel,
@@ -236,20 +267,20 @@ function InlineEditHeader({
   const [date, setDate] = useState(order.datePlaced);
   const canSave = name.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
   return (
-    <div className="space-y-2 px-3 py-3">
+    <div className="space-y-2 pl-4 pr-3 py-3">
       <input
         autoFocus
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Customer name"
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
       />
       <div className="flex items-center gap-2">
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          className="flex-1 rounded-md border border-input bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
         />
         <button
           onClick={onCancel}
@@ -260,7 +291,7 @@ function InlineEditHeader({
         <button
           disabled={!canSave}
           onClick={() => onSave(name.trim(), date)}
-          className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-md bg-cta px-2.5 py-2 text-xs font-semibold text-cta-foreground hover:brightness-95 disabled:opacity-50"
         >
           <Check className="size-3.5" /> Save
         </button>
@@ -278,14 +309,23 @@ function ItemRow({
   onChange: (next: OrderItem) => void;
   onRemove: () => void;
 }) {
-  const done = item.quantityFulfilled >= item.quantityOrdered;
+  const done = item.quantityFulfilled >= item.quantityOrdered && item.quantityOrdered > 0;
   return (
-    <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0">
+    <div
+      className={`relative flex items-center gap-2 border-b border-[#F3F4F6] px-4 py-3 last:border-b-0 ${
+        done ? "bg-[#F0FDF4]" : "bg-[#FAFAFA]"
+      }`}
+    >
+      {done && <span className="absolute inset-y-0 left-0 w-[3px] bg-success" />}
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}>
+        <p
+          className={`truncate text-[13px] font-medium ${
+            done ? "text-[#15803D] line-through" : "text-foreground"
+          }`}
+        >
           {item.productName}
         </p>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-[12px] text-muted-foreground">
           Ordered {item.quantityOrdered} · Remaining {Math.max(0, item.quantityOrdered - item.quantityFulfilled)}
         </p>
       </div>
@@ -332,7 +372,7 @@ function NumInput({
         max={max}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value || "0", 10))}
-        className="w-14 rounded border border-input bg-background px-1.5 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
+        className="w-12 rounded-lg border border-input bg-card px-1.5 py-1.5 text-center text-sm font-semibold tabular-nums focus:border-primary focus:outline-none"
       />
     </label>
   );
@@ -409,9 +449,12 @@ function NewOrderForm({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-card p-3">
+    <div
+      className="space-y-3 rounded-xl border border-border bg-card p-4"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">New order</h2>
+        <h2 className="text-[15px] font-semibold text-foreground">New order</h2>
         <button onClick={onCancel} className="rounded p-1 text-muted-foreground hover:bg-accent">
           <X className="size-4" />
         </button>
@@ -424,7 +467,7 @@ function NewOrderForm({
             value={customer}
             onChange={(e) => setCustomer(e.target.value)}
             placeholder="e.g. Rajesh Plumbing"
-            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2.5 text-base text-foreground focus:border-primary focus:outline-none"
+            className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2.5 text-base text-foreground focus:border-primary focus:outline-none"
           />
         </label>
         <label className="text-xs font-medium text-muted-foreground">
@@ -433,7 +476,7 @@ function NewOrderForm({
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2.5 text-base text-foreground focus:border-primary focus:outline-none"
+            className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2.5 text-base text-foreground focus:border-primary focus:outline-none"
           />
         </label>
       </div>
@@ -456,7 +499,7 @@ function NewOrderForm({
       {items.length > 0 && (
         <div className="space-y-1 rounded-md border border-border">
           {items.map((it, idx) => (
-            <div key={`${it.productName}-${idx}`} className="flex items-center gap-2 border-b border-border/60 px-3 py-2 last:border-b-0">
+            <div key={`${it.productName}-${idx}`} className="flex items-center gap-2 border-b border-[#F3F4F6] px-3 py-2 last:border-b-0">
               <p className="min-w-0 flex-1 truncate text-sm">{it.productName}</p>
               <input
                 type="number"
@@ -470,7 +513,7 @@ function NewOrderForm({
                     ),
                   )
                 }
-                className="w-16 rounded border border-input bg-background px-2 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
+                className="w-16 rounded border border-input bg-card px-2 py-1.5 text-center text-sm tabular-nums focus:border-primary focus:outline-none"
               />
               <button
                 onClick={() => setItems((curr) => curr.filter((_, i) => i !== idx))}
@@ -486,14 +529,15 @@ function NewOrderForm({
       <div className="flex gap-2 pt-1">
         <button
           onClick={onCancel}
-          className="flex-1 rounded-md border border-border bg-card py-3 text-sm font-medium hover:bg-accent"
+          className="flex-1 rounded-xl border border-border bg-card py-3 text-sm font-medium hover:bg-accent"
         >
           Cancel
         </button>
         <button
           onClick={save}
           disabled={!canSave}
-          className="flex-[2] rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-[2] rounded-xl bg-cta py-3 text-sm font-semibold text-cta-foreground hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ boxShadow: "var(--shadow-cta)" }}
         >
           Save order
         </button>

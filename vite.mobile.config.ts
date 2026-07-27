@@ -69,7 +69,7 @@ export default defineConfig({
   ],
   root: path.resolve(__dirname, "src/mobile"),
   build: {
-    outDir: path.resolve(__dirname, "dist-mobile"),
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
     target: "es2020",
   },

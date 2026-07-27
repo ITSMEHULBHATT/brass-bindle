@@ -7,7 +7,7 @@ import path from "node:path";
 
 // Standalone SPA build used to package the app into a Capacitor APK OR host on
 // GitHub Pages. Set VITE_BASE (e.g. "/repo-name/") for GitHub Pages subpaths.
-const base = process.env.VITE_BASE || "/";
+const base = process.env.VITE_BASE || "/brass-bindle/";
 
 export default defineConfig({
   base,
@@ -69,7 +69,7 @@ export default defineConfig({
   ],
   root: path.resolve(__dirname, "src/mobile"),
   build: {
-    outDir: path.resolve(__dirname, "dist-mobile"),
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
     target: "es2020",
   },

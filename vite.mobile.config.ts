@@ -7,7 +7,7 @@ import path from "node:path";
 
 // Standalone SPA build used to package the app into a Capacitor APK OR host on
 // GitHub Pages. Set VITE_BASE (e.g. "/repo-name/") for GitHub Pages subpaths.
-const base = process.env.VITE_BASE || "/brass-bindle/";
+const base = process.env.VITE_BASE || "/";
 
 export default defineConfig({
   base,
@@ -21,37 +21,20 @@ export default defineConfig({
       strategies: "generateSW",
       filename: "sw.js",
       devOptions: { enabled: false },
-      includeAssets: ["icons/icon-192.png", "icons/icon-512.png", "icons/icon-512-maskable.png"],
-      manifestFilename: "manifest.webmanifest",
+      includeAssets: ["favicon.ico", "icon-192.png", "icon-512.png"],
       manifest: {
         name: "Superior Bath Fittings",
         short_name: "SBF Orders",
         description: "Production tracker for Superior Bath Fittings",
-        theme_color: "#1A2B4A",
+        theme_color: "#b45309",
         background_color: "#ffffff",
         display: "standalone",
         start_url: base,
         scope: base,
-        id: base,
         icons: [
-          {
-            src: `${base}icons/icon-192.png`,
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: `${base}icons/icon-512.png`,
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: `${base}icons/icon-512-maskable.png`,
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ],
       },
       workbox: {
@@ -86,7 +69,7 @@ export default defineConfig({
   ],
   root: path.resolve(__dirname, "src/mobile"),
   build: {
-    outDir: path.resolve(__dirname, "dist"),
+    outDir: path.resolve(__dirname, "dist-mobile"),
     emptyOutDir: true,
     target: "es2020",
   },
